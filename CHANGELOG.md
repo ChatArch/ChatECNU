@@ -1,6 +1,6 @@
 # Changelog
 
-## YYYY-MM-DD
+## 2026-06-15
 
 ### Added
 

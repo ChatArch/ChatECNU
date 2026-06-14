@@ -2,10 +2,10 @@
     <a href="https://pypi.python.org/pypi/ChatNet">
         <img src="https://img.shields.io/pypi/v/ChatNet.svg" alt="PyPI version" />
     </a>
-    <a href="https://github.com/OWNER/REPO/actions/workflows/ci.yml">
-        <img src="https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg" alt="Tests" />
+    <a href="https://github.com/ChatArch/ChatNet/actions/workflows/ci.yml">
+        <img src="https://github.com/ChatArch/ChatNet/actions/workflows/ci.yml/badge.svg" alt="Tests" />
     </a>
-    <a href="https://OWNER.github.io/REPO">
+    <a href="https://ChatArch.github.io/ChatNet">
         <img src="https://img.shields.io/badge/docs-mkdocs-blue.svg" alt="Documentation" />
     </a>
 </div>
@@ -17,7 +17,7 @@
 
 # ChatNet
 
-ChatNet package
+ChatNet 是 ChatArch 系列的网络与校园网 CLI，当前提供 ECNU 自助服务平台登录、查询和访客管理能力。
 
 ## 快速开始
 

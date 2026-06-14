@@ -1,6 +1,6 @@
 site_name: ChatNet 文档
-site_url: https://OWNER.github.io/REPO
-repo_url: https://github.com/OWNER/REPO
+site_url: https://ChatArch.github.io/ChatNet
+repo_url: https://github.com/ChatArch/ChatNet
 theme:
   name: material
   language: zh

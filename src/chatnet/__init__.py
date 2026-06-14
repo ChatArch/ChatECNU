@@ -1,4 +1,4 @@
-"""ChatNet package."""
+"""ChatArch network and campus-network CLI."""
 
 __all__ = ["__version__"]
 

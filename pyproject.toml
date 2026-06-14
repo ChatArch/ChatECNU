@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ChatNet"
 dynamic = ["version"]
-description = "ChatNet package"
+description = "ChatArch network and campus-network CLI"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -28,6 +28,11 @@ chatnet = "chatnet.cli:main"
 
 [project.entry-points."chatenv.configs"]
 chatnet = "chatnet.config"
+
+[project.urls]
+Homepage = "https://github.com/ChatArch/ChatNet"
+Repository = "https://github.com/ChatArch/ChatNet"
+Documentation = "https://ChatArch.github.io/ChatNet"
 
 [project.optional-dependencies]
 captcha = ["ddddocr", "numpy", "pillow"]

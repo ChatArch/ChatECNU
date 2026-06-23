@@ -11,13 +11,13 @@
 ### Expected Behavior
 
 - `chatnet ecnu login-init` calls `login_init`.
-- `chatnet ecnu login` resolves explicit username, password, and captcha, then calls `login`.
-- `chatnet ecnu login-auto` resolves explicit credentials and calls `login_auto`.
-- `chatnet ecnu status` redacts cookie values.
+- `chatnet ecnu login --captcha ...` still supports the hidden manual captcha path and calls `login`.
+- `chatnet ecnu login` without `--captcha` resolves credentials and calls `login_auto`.
+- `chatnet ecnu status` defaults to a human summary and `--json` returns the redacted JSON payload.
 - Advanced commands such as `cookie-header`, `login-init`, and `selftest` still work when called directly but are hidden from the default help surface.
-- `chatnet ecnu cookie-header`, `home`, `user-info`, `auth-log`, `detail-log`, and visitor commands call their matching client methods.
+- `chatnet ecnu cookie-header`, `home`, `user-info`, hidden `debug auth-log`, hidden `debug detail-log`, and visitor commands call their matching client methods.
 - Visitor mutation commands support `--dry-run`.
-- Visitor creation returns the server-issued initial account/password payload; password editing is a separate `visitor update` step.
+- Visitor mutations default to readable summaries unless `--json` is requested.
 
 ## Case 2: default help should hide advanced or sensitive commands
 
@@ -27,8 +27,8 @@
 
 ### Expected Behavior
 
-- Common commands such as `status`, `login-auto`, `visitor list`, `visitor create`, `visitor update`, and `visitor delete` are visible.
-- Advanced or sensitive commands/options such as `cookie-header`, `login-init`, `selftest`, `visitor lock`, `--cookie`, and `--state-file` are hidden.
+- Common commands such as `status`, `login`, `home`, `visitor list`, `visitor create`, `visitor update`, and `visitor delete` are visible.
+- Advanced or sensitive commands/options such as `cookie-header`, `login-init`, `login-auto`, `selftest`, `auth-log`, `detail-log`, `debug`, `visitor lock`, `--cookie`, and `--state-file` are hidden.
 
 ## Case 3: explicit env file should provide login defaults
 
@@ -39,5 +39,5 @@
 
 ### Expected Behavior
 
-- Running `chatnet ecnu --env-file <file> login --captcha 1234 -I` succeeds without passing `--username` or `--password`.
-- The fake client receives credentials loaded from the env file.
+- Running `chatnet ecnu --env-file <file> login --rounds 1 --topk 1 -I` succeeds without passing `--username` or `--password`.
+- The fake client receives credentials loaded from the env file and routes them through auto-login.

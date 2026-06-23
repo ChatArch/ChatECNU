@@ -121,8 +121,17 @@ def login_init(ctx: click.Context, captcha_path: str | None) -> None:
 @cli.command(name="login")
 @click.option("--username", default=None, help="ECNU username, or set ECNU_USERNAME.")
 @click.option("--password", default=None, help="ECNU password, or set ECNU_PASSWORD.")
-@click.option("--captcha", default=None, help="Captcha text from login-init image.")
+@click.option("--captcha", default=None, hidden=True, help="Captcha text from login-init image.")
 @click.option("--sms-code", default=None, help="SMS code when required by the server.")
+@click.option(
+    "--captcha-path",
+    default=None,
+    hidden=True,
+    help="Where to save the latest captcha image. Defaults to $CHATARCH_HOME/cache/chatnet/ecnu-login-captcha.png.",
+)
+@click.option("--rounds", default=3, show_default=True, type=int, hidden=True, help="Captcha refresh rounds.")
+@click.option("--topk", default=5, show_default=True, type=int, hidden=True, help="OCR candidates per captcha.")
+@click.option("--json", "json_output", is_flag=True, help="Print raw JSON instead of a human summary.")
 @add_interactive_option
 @click.pass_context
 def login(
@@ -131,49 +140,23 @@ def login(
     password: str | None,
     captcha: str | None,
     sms_code: str | None,
-    interactive: bool | None,
-) -> None:
-    """Complete login using username, password, and captcha."""
-
-    values = resolve_login_inputs(
-        captcha=captcha,
-        include_captcha=True,
-        password=password,
-        username=username,
-        interactive=interactive,
-    )
-    echo_json(call_client(ctx, lambda client: client.login(values["username"], values["password"], values["captcha"], sms_code=sms_code)))
-
-
-@cli.command(name="login-auto")
-@click.option("--username", default=None, help="ECNU username, or set ECNU_USERNAME.")
-@click.option("--password", default=None, help="ECNU password, or set ECNU_PASSWORD.")
-@click.option("--sms-code", default=None, help="SMS code when required by the server.")
-@click.option(
-    "--captcha-path",
-    default=None,
-    help="Where to save the latest captcha image. Defaults to $CHATARCH_HOME/cache/chatnet/ecnu-login-captcha.png.",
-)
-@click.option("--rounds", default=3, show_default=True, type=int, help="Captcha refresh rounds.")
-@click.option("--topk", default=5, show_default=True, type=int, help="OCR candidates per captcha.")
-@add_interactive_option
-@click.pass_context
-def login_auto(
-    ctx: click.Context,
-    username: str | None,
-    password: str | None,
-    sms_code: str | None,
     captcha_path: str | None,
     rounds: int,
     topk: int,
+    json_output: bool,
     interactive: bool | None,
 ) -> None:
-    """Auto-solve captcha with optional OCR dependencies and try login."""
+    """Login to ECNU. Uses OCR-backed captcha solving unless --captcha is provided."""
 
-    values = resolve_login_inputs(username=username, password=password, interactive=interactive)
+    values = resolve_login_inputs(username=username, password=password, interactive=interactive, command_name="login")
     target_path = Path(captcha_path).expanduser() if captcha_path else default_captcha_path()
-    echo_json(
-        call_client(
+    if captcha:
+        result = call_client(
+            ctx,
+            lambda client: client.login(values["username"], values["password"], captcha, sms_code=sms_code),
+        )
+    else:
+        result = call_client(
             ctx,
             lambda client: client.login_auto(
                 values["username"],
@@ -184,23 +167,69 @@ def login_auto(
                 captcha_path=target_path,
             ),
         )
+    emit_login_result(result, json_output=json_output)
+
+
+@cli.command(name="login-auto", hidden=True)
+@click.option("--username", default=None, help="ECNU username, or set ECNU_USERNAME.")
+@click.option("--password", default=None, help="ECNU password, or set ECNU_PASSWORD.")
+@click.option("--sms-code", default=None, help="SMS code when required by the server.")
+@click.option(
+    "--captcha-path",
+    default=None,
+    hidden=True,
+    help="Where to save the latest captcha image. Defaults to $CHATARCH_HOME/cache/chatnet/ecnu-login-captcha.png.",
+)
+@click.option("--rounds", default=3, show_default=True, type=int, hidden=True, help="Captcha refresh rounds.")
+@click.option("--topk", default=5, show_default=True, type=int, hidden=True, help="OCR candidates per captcha.")
+@click.option("--json", "json_output", is_flag=True, hidden=True, help="Print raw JSON instead of a human summary.")
+@add_interactive_option
+@click.pass_context
+def login_auto(
+    ctx: click.Context,
+    username: str | None,
+    password: str | None,
+    sms_code: str | None,
+    captcha_path: str | None,
+    rounds: int,
+    topk: int,
+    json_output: bool,
+    interactive: bool | None,
+) -> None:
+    """Hidden compatibility alias for OCR-backed login."""
+
+    values = resolve_login_inputs(username=username, password=password, interactive=interactive, command_name="login-auto")
+    target_path = Path(captcha_path).expanduser() if captcha_path else default_captcha_path()
+    result = call_client(
+        ctx,
+        lambda client: client.login_auto(
+            values["username"],
+            values["password"],
+            sms_code=sms_code,
+            rounds=rounds,
+            topk=topk,
+            captcha_path=target_path,
+        ),
     )
+    emit_login_result(result, json_output=json_output)
 
 
 @cli.command(name="status")
+@click.option("--json", "json_output", is_flag=True, help="Print raw JSON instead of a human summary.")
 @click.pass_context
-def status(ctx: click.Context) -> None:
+def status(ctx: click.Context, json_output: bool) -> None:
     """Show saved login/session status with Cookie values redacted."""
 
-    echo_json(session_status(ctx))
+    emit_status_result(session_status(ctx), json_output=json_output)
 
 
 @cli.command(name="session-info", hidden=True)
+@click.option("--json", "json_output", is_flag=True, hidden=True, help="Print raw JSON instead of a human summary.")
 @click.pass_context
-def session_info(ctx: click.Context) -> None:
+def session_info(ctx: click.Context, json_output: bool) -> None:
     """Show saved session metadata with Cookie values redacted."""
 
-    echo_json(session_status(ctx))
+    emit_status_result(session_status(ctx), json_output=json_output)
 
 
 @cli.command(name="cookie-header", hidden=True)
@@ -212,49 +241,108 @@ def cookie_header(ctx: click.Context) -> None:
 
 
 @cli.command(name="logout")
+@click.option("--json", "json_output", is_flag=True, help="Print raw JSON instead of a human summary.")
 @click.pass_context
-def logout(ctx: click.Context) -> None:
+def logout(ctx: click.Context, json_output: bool) -> None:
     """Logout and update saved session state."""
 
-    echo_json(call_client(ctx, lambda client: client.logout()))
+    emit_simple_result(
+        call_client(ctx, lambda client: client.logout()),
+        json_output=json_output,
+        success_message="Logout succeeded.",
+        failure_message="Logout may not have completed cleanly.",
+    )
 
 
 @cli.command(name="home")
+@click.option("--json", "json_output", is_flag=True, help="Print raw JSON instead of a human summary.")
 @click.pass_context
-def home(ctx: click.Context) -> None:
+def home(ctx: click.Context, json_output: bool) -> None:
     """Fetch home summary."""
 
-    echo_json(call_client(ctx, lambda client: client.home_summary()))
+    emit_home_result(call_client(ctx, lambda client: client.home_summary()), json_output=json_output)
 
 
 @cli.command(name="user-info")
+@click.option("--json", "json_output", is_flag=True, help="Print raw JSON instead of a human summary.")
 @click.pass_context
-def user_info(ctx: click.Context) -> None:
+def user_info(ctx: click.Context, json_output: bool) -> None:
     """Fetch user information."""
 
-    echo_json(call_client(ctx, lambda client: client.user_info()))
+    emit_mapping_result(
+        call_client(ctx, lambda client: client.user_info()),
+        json_output=json_output,
+        empty_message="No user information returned.",
+    )
 
 
-@cli.command(name="auth-log")
+@cli.group(name="debug", hidden=True)
+def debug_group() -> None:
+    """Hidden diagnostics and low-level queries."""
+
+
+@debug_group.command(name="auth-log")
 @click.option("--start", default=None, help="Start time.")
 @click.option("--end", default=None, help="End time.")
 @click.option("--limit", default=None, type=int, help="Maximum rows to print.")
+@click.option("--json", "json_output", is_flag=True, hidden=True, help="Print raw JSON instead of a human summary.")
 @click.pass_context
-def auth_log(ctx: click.Context, start: str | None, end: str | None, limit: int | None) -> None:
+def auth_log(ctx: click.Context, start: str | None, end: str | None, limit: int | None, json_output: bool) -> None:
     """Query authentication logs."""
 
-    echo_json(call_client(ctx, lambda client: client.auth_logs(start, end, limit)))
+    emit_log_result(
+        call_client(ctx, lambda client: client.auth_logs(start, end, limit)),
+        json_output=json_output,
+        title="Authentication logs",
+    )
 
 
-@cli.command(name="detail-log")
+@debug_group.command(name="detail-log")
 @click.option("--start", default=None, help="Start time.")
 @click.option("--end", default=None, help="End time.")
 @click.option("--limit", default=None, type=int, help="Maximum rows to print.")
+@click.option("--json", "json_output", is_flag=True, hidden=True, help="Print raw JSON instead of a human summary.")
 @click.pass_context
-def detail_log(ctx: click.Context, start: str | None, end: str | None, limit: int | None) -> None:
+def detail_log(ctx: click.Context, start: str | None, end: str | None, limit: int | None, json_output: bool) -> None:
     """Query network detail logs."""
 
-    echo_json(call_client(ctx, lambda client: client.detail_logs(start, end, limit)))
+    emit_log_result(
+        call_client(ctx, lambda client: client.detail_logs(start, end, limit)),
+        json_output=json_output,
+        title="Network detail logs",
+    )
+
+
+@cli.command(name="auth-log", hidden=True)
+@click.option("--start", default=None, help="Start time.")
+@click.option("--end", default=None, help="End time.")
+@click.option("--limit", default=None, type=int, help="Maximum rows to print.")
+@click.option("--json", "json_output", is_flag=True, hidden=True, help="Print raw JSON instead of a human summary.")
+@click.pass_context
+def auth_log_alias(ctx: click.Context, start: str | None, end: str | None, limit: int | None, json_output: bool) -> None:
+    """Hidden compatibility alias for debug auth-log."""
+
+    emit_log_result(
+        call_client(ctx, lambda client: client.auth_logs(start, end, limit)),
+        json_output=json_output,
+        title="Authentication logs",
+    )
+
+
+@cli.command(name="detail-log", hidden=True)
+@click.option("--start", default=None, help="Start time.")
+@click.option("--end", default=None, help="End time.")
+@click.option("--limit", default=None, type=int, help="Maximum rows to print.")
+@click.option("--json", "json_output", is_flag=True, hidden=True, help="Print raw JSON instead of a human summary.")
+@click.pass_context
+def detail_log_alias(ctx: click.Context, start: str | None, end: str | None, limit: int | None, json_output: bool) -> None:
+    """Hidden compatibility alias for debug detail-log."""
+
+    emit_log_result(
+        call_client(ctx, lambda client: client.detail_logs(start, end, limit)),
+        json_output=json_output,
+        title="Network detail logs",
+    )
 
 
 @cli.group(name="visitor")
@@ -263,31 +351,44 @@ def visitor_group() -> None:
 
 
 @visitor_group.command(name="list")
+@click.option("--json", "json_output", is_flag=True, help="Print raw JSON instead of a human summary.")
 @click.pass_context
-def visitor_list(ctx: click.Context) -> None:
+def visitor_list(ctx: click.Context, json_output: bool) -> None:
     """List visitor accounts."""
 
-    echo_json(call_client(ctx, lambda client: client.list_visitors()))
+    emit_visitor_list_result(call_client(ctx, lambda client: client.list_visitors()), json_output=json_output)
 
 
 @visitor_group.command(name="get")
 @click.option("--id", "visitor_id", default=None, help="Visitor record id.")
 @click.option("--account", default=None, help="Visitor account name.")
+@click.option("--json", "json_output", is_flag=True, help="Print raw JSON instead of a human summary.")
 @click.pass_context
-def visitor_get(ctx: click.Context, visitor_id: str | None, account: str | None) -> None:
+def visitor_get(ctx: click.Context, visitor_id: str | None, account: str | None, json_output: bool) -> None:
     """Get one visitor by id or account."""
 
     if not visitor_id and not account:
         raise click.UsageError("Provide either --id or --account.")
-    echo_json(call_client(ctx, lambda client: client.get_visitor(visitor_id=visitor_id, account=account)))
+    emit_mapping_result(
+        call_client(ctx, lambda client: client.get_visitor(visitor_id=visitor_id, account=account)),
+        json_output=json_output,
+        empty_message="Visitor not found.",
+    )
 
 
 @visitor_group.command(name="create")
 @click.option("--remark", default=None, help="Visitor remark, 2-14 Chinese or English letters.")
 @click.option("--dry-run", is_flag=True, help="Print request spec without submitting.")
+@click.option("--json", "json_output", is_flag=True, help="Print raw JSON instead of a human summary.")
 @add_interactive_option
 @click.pass_context
-def visitor_create(ctx: click.Context, remark: str | None, dry_run: bool, interactive: bool | None) -> None:
+def visitor_create(
+    ctx: click.Context,
+    remark: str | None,
+    dry_run: bool,
+    json_output: bool,
+    interactive: bool | None,
+) -> None:
     """Create a visitor account."""
 
     values = resolve_command_inputs(
@@ -296,7 +397,11 @@ def visitor_create(ctx: click.Context, remark: str | None, dry_run: bool, intera
         interactive=interactive,
         usage="Usage: chatnet ecnu visitor create --remark TEXT [-i|-I]",
     )
-    echo_json(call_client(ctx, lambda client: client.create_visitor(values["remark"], dry_run=dry_run)))
+    emit_mutation_result(
+        call_client(ctx, lambda client: client.create_visitor(values["remark"], dry_run=dry_run)),
+        json_output=json_output,
+        action="Create visitor",
+    )
 
 
 @visitor_group.command(name="update")
@@ -304,6 +409,7 @@ def visitor_create(ctx: click.Context, remark: str | None, dry_run: bool, intera
 @click.option("--remark", default=None, help="Visitor remark, 2-14 Chinese or English letters.")
 @click.option("--password", default=None, help="New visitor password.")
 @click.option("--dry-run", is_flag=True, help="Print request spec without submitting.")
+@click.option("--json", "json_output", is_flag=True, help="Print raw JSON instead of a human summary.")
 @add_interactive_option
 @click.pass_context
 def visitor_update(
@@ -312,6 +418,7 @@ def visitor_update(
     remark: str | None,
     password: str | None,
     dry_run: bool,
+    json_output: bool,
     interactive: bool | None,
 ) -> None:
     """Update visitor remark and password."""
@@ -322,7 +429,7 @@ def visitor_update(
         interactive=interactive,
         usage="Usage: chatnet ecnu visitor update --id ID --remark TEXT --password TEXT [-i|-I]",
     )
-    echo_json(
+    emit_mutation_result(
         call_client(
             ctx,
             lambda client: client.update_visitor(
@@ -331,16 +438,25 @@ def visitor_update(
                 values["password"],
                 dry_run=dry_run,
             ),
-        )
+        ),
+        json_output=json_output,
+        action="Update visitor",
     )
 
 
 @visitor_group.command(name="delete")
 @click.option("--id", "visitor_id", default=None, help="Visitor record id.")
 @click.option("--dry-run", is_flag=True, help="Print request spec without submitting.")
+@click.option("--json", "json_output", is_flag=True, help="Print raw JSON instead of a human summary.")
 @add_interactive_option
 @click.pass_context
-def visitor_delete(ctx: click.Context, visitor_id: str | None, dry_run: bool, interactive: bool | None) -> None:
+def visitor_delete(
+    ctx: click.Context,
+    visitor_id: str | None,
+    dry_run: bool,
+    json_output: bool,
+    interactive: bool | None,
+) -> None:
     """Delete a visitor account."""
 
     values = resolve_command_inputs(
@@ -349,15 +465,26 @@ def visitor_delete(ctx: click.Context, visitor_id: str | None, dry_run: bool, in
         interactive=interactive,
         usage="Usage: chatnet ecnu visitor delete --id ID [-i|-I]",
     )
-    echo_json(call_client(ctx, lambda client: client.delete_visitor(values["visitor_id"], dry_run=dry_run)))
+    emit_mutation_result(
+        call_client(ctx, lambda client: client.delete_visitor(values["visitor_id"], dry_run=dry_run)),
+        json_output=json_output,
+        action="Delete visitor",
+    )
 
 
 @visitor_group.command(name="lock", hidden=True)
 @click.option("--id", "visitor_id", default=None, help="Visitor record id.")
 @click.option("--dry-run", is_flag=True, help="Print request spec without submitting.")
+@click.option("--json", "json_output", is_flag=True, hidden=True, help="Print raw JSON instead of a human summary.")
 @add_interactive_option
 @click.pass_context
-def visitor_lock(ctx: click.Context, visitor_id: str | None, dry_run: bool, interactive: bool | None) -> None:
+def visitor_lock(
+    ctx: click.Context,
+    visitor_id: str | None,
+    dry_run: bool,
+    json_output: bool,
+    interactive: bool | None,
+) -> None:
     """Lock a visitor account."""
 
     values = resolve_command_inputs(
@@ -366,7 +493,11 @@ def visitor_lock(ctx: click.Context, visitor_id: str | None, dry_run: bool, inte
         interactive=interactive,
         usage="Usage: chatnet ecnu visitor lock --id ID [-i|-I]",
     )
-    echo_json(call_client(ctx, lambda client: client.lock_visitor(values["visitor_id"], dry_run=dry_run)))
+    emit_mutation_result(
+        call_client(ctx, lambda client: client.lock_visitor(values["visitor_id"], dry_run=dry_run)),
+        json_output=json_output,
+        action="Lock visitor",
+    )
 
 
 def make_client(ctx: click.Context) -> Any:
@@ -392,6 +523,201 @@ def echo_json(data: Any) -> None:
     click.echo(json.dumps(data, ensure_ascii=False, indent=2))
 
 
+def emit_login_result(result: dict[str, Any], *, json_output: bool) -> None:
+    if json_output:
+        echo_json(result)
+        return
+    click.echo(format_login_summary(result))
+
+
+def emit_status_result(result: dict[str, Any], *, json_output: bool) -> None:
+    if json_output:
+        echo_json(result)
+        return
+    click.echo(format_status_summary(result))
+
+
+def emit_home_result(result: dict[str, Any], *, json_output: bool) -> None:
+    if json_output:
+        echo_json(result)
+        return
+    click.echo(format_home_summary(result))
+
+
+def emit_log_result(result: dict[str, Any], *, json_output: bool, title: str) -> None:
+    if json_output:
+        echo_json(result)
+        return
+    click.echo(format_log_summary(result, title=title))
+
+
+def emit_mapping_result(result: dict[str, Any], *, json_output: bool, empty_message: str) -> None:
+    if json_output:
+        echo_json(result)
+        return
+    click.echo(format_mapping_summary(result, empty_message=empty_message))
+
+
+def emit_simple_result(
+    result: dict[str, Any],
+    *,
+    json_output: bool,
+    success_message: str,
+    failure_message: str,
+) -> None:
+    if json_output:
+        echo_json(result)
+        return
+    click.echo(success_message if result.get("success") else failure_message)
+
+
+def emit_visitor_list_result(result: dict[str, Any], *, json_output: bool) -> None:
+    if json_output:
+        echo_json(result)
+        return
+    click.echo(format_visitor_list_summary(result))
+
+
+def emit_mutation_result(result: dict[str, Any], *, json_output: bool, action: str) -> None:
+    if json_output:
+        echo_json(result)
+        return
+    click.echo(format_mutation_summary(result, action=action))
+
+
+def format_login_summary(result: dict[str, Any]) -> str:
+    if "attempts" in result:
+        return format_auto_login_summary(result)
+    return format_manual_login_summary(result)
+
+
+def format_auto_login_summary(result: dict[str, Any]) -> str:
+    attempts = result.get("attempts") or []
+    round_count = len(attempts)
+    candidate_count = sum(len(item.get("attempts") or []) for item in attempts)
+    if result.get("success"):
+        final_candidate = ""
+        if attempts:
+            last_round = attempts[-1].get("attempts") or []
+            if last_round:
+                final_candidate = last_round[-1].get("candidate") or ""
+        lines = [
+            "Login succeeded.",
+            f"Rounds tried: {round_count}",
+            f"Captcha attempts: {candidate_count}",
+        ]
+        if final_candidate:
+            lines.append(f"Accepted captcha candidate: {final_candidate}")
+        return "\n".join(lines)
+    message = result.get("message") or "Login failed."
+    lines = [
+        "Login failed.",
+        message,
+        f"Rounds tried: {round_count}",
+        f"Captcha attempts: {candidate_count}",
+    ]
+    if result.get("aborted"):
+        lines.append("Stopped early because the server returned a non-retryable response.")
+    return "\n".join(lines)
+
+
+def format_manual_login_summary(result: dict[str, Any]) -> str:
+    validated = result.get("validate_user") or {}
+    submit = result.get("submit_login") or {}
+    sms = result.get("validate_sms") or {}
+    if submit.get("success"):
+        return "Login succeeded."
+    lines = ["Login failed."]
+    if result.get("message"):
+        lines.append(result["message"])
+    elif sms and not sms.get("success"):
+        lines.append(str(sms.get("message") or "SMS verification failed."))
+    elif validated and not validated.get("success"):
+        lines.append(str(validated.get("message") or "Username, password, or captcha was rejected."))
+    elif submit.get("error"):
+        lines.append(str(submit["error"]))
+    return "\n".join(lines)
+
+
+def format_status_summary(result: dict[str, Any]) -> str:
+    cookies = result.get("cookies")
+    username = result.get("username") or "(unknown)"
+    lines = [f"Username: {username}"]
+    if result.get("authenticated_at"):
+        lines.append(f"Authenticated at: {result['authenticated_at']}")
+    else:
+        lines.append("Authenticated at: not logged in")
+    lines.append(f"Cookies saved: {len(cookies) if isinstance(cookies, dict) else 0}")
+    if result.get("base_url"):
+        lines.append(f"Base URL: {result['base_url']}")
+    return "\n".join(lines)
+
+
+def format_home_summary(result: dict[str, Any]) -> str:
+    user_info = result.get("user_info") or {}
+    online_info = result.get("online_info") or []
+    product_info = result.get("product_info") or []
+    lines = ["Home summary"]
+    if user_info:
+        for key, value in user_info.items():
+            lines.append(f"{key}: {value}")
+    lines.append(f"Online sessions: {len(online_info)}")
+    lines.append(f"Products: {len(product_info)}")
+    return "\n".join(lines)
+
+
+def format_log_summary(result: dict[str, Any], *, title: str) -> str:
+    rows = result.get("rows") or []
+    lines = [title]
+    if result.get("summary"):
+        lines.append(str(result["summary"]))
+    lines.append(f"Rows: {len(rows)}")
+    for row in rows[:3]:
+        lines.append("- " + ", ".join(f"{key}={value}" for key, value in row.items()))
+    return "\n".join(lines)
+
+
+def format_mapping_summary(result: dict[str, Any], *, empty_message: str) -> str:
+    if not result:
+        return empty_message
+    return "\n".join(f"{key}: {value}" for key, value in result.items())
+
+
+def format_visitor_list_summary(result: dict[str, Any]) -> str:
+    rows = result.get("rows") or []
+    lines = ["Visitor accounts"]
+    if result.get("summary"):
+        lines.append(str(result["summary"]))
+    lines.append(f"Count: {result.get('count', len(rows))}")
+    for row in rows[:5]:
+        lines.append(
+            "- "
+            + ", ".join(
+                [
+                    f"id={row.get('visitor_id')}",
+                    f"account={row.get('account')}",
+                    f"status={row.get('status')}",
+                    f"remark={row.get('remark')}",
+                ]
+            )
+        )
+    return "\n".join(lines)
+
+
+def format_mutation_summary(result: dict[str, Any], *, action: str) -> str:
+    if result.get("dry_run"):
+        return f"{action}: dry run ready."
+    response = result.get("response") or {}
+    if isinstance(response, dict) and "password" in response and "account" in response:
+        lines = [f"{action}: success.", f"Account: {response['account']}"]
+        if response.get("password"):
+            lines.append(f"Initial password: {response['password']}")
+        return "\n".join(lines)
+    if isinstance(response, dict) and response.get("ok"):
+        return f"{action}: success."
+    return f"{action}: completed."
+
+
 def resolve_login_inputs(
     *,
     username: str | None,
@@ -399,13 +725,14 @@ def resolve_login_inputs(
     interactive: bool | None,
     captcha: str | None = None,
     include_captcha: bool = False,
+    command_name: str = "login",
 ) -> dict[str, str]:
     schema = LOGIN_SCHEMA if include_captcha else LOGIN_AUTO_SCHEMA
     provided = {
         "username": username or ECNUConfig.ECNU_USERNAME.value,
         "password": password or ECNUConfig.ECNU_PASSWORD.value,
     }
-    usage = "Usage: chatnet ecnu login-auto --username TEXT --password TEXT [-i|-I]"
+    usage = f"Usage: chatnet ecnu {command_name} --username TEXT --password TEXT [-i|-I]"
     if include_captcha:
         provided["captcha"] = captcha
         usage = "Usage: chatnet ecnu login --username TEXT --password TEXT --captcha TEXT [-i|-I]"

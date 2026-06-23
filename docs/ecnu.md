@@ -92,12 +92,12 @@ chatnet ecnu --state-file ./ecnu-session.json status
 
 ## 4. 登录
 
-### 自动验证码登录
+### 默认登录
 
 推荐使用：
 
 ```bash
-chatnet ecnu login-auto --rounds 3 --topk 5 -I
+chatnet ecnu login --rounds 3 --topk 5 -I
 ```
 
 默认逻辑：
@@ -106,9 +106,10 @@ chatnet ecnu login-auto --rounds 3 --topk 5 -I
 - OCR 生成 top-k 候选。
 - 候选失败后继续尝试，全部失败后刷新验证码。
 - 如果服务端要求短信验证码，需要通过 `--sms-code` 提供。
+- 默认输出人类可读摘要；如果要原始结构，显式加 `--json`。
 
 ```bash
-chatnet ecnu login-auto --sms-code 123456 --rounds 3 --topk 5 -I
+chatnet ecnu login --sms-code 123456 --rounds 3 --topk 5 -I
 ```
 
 ### 手动验证码登录（高级）
@@ -137,7 +138,7 @@ chatnet ecnu login --username "your-ecnu-username" --password "your-password" --
 chatnet ecnu status
 ```
 
-`status` 会脱敏 Cookie 值。需要本地调试时，仍可直接调用隐藏的 `cookie-header` 命令导出 Cookie header：
+`status` 默认输出摘要。需要原始结构时使用 `--json`。需要本地调试时，仍可直接调用隐藏的 `cookie-header` 命令导出 Cookie header：
 
 ```bash
 chatnet ecnu cookie-header
@@ -165,18 +166,13 @@ chatnet ecnu home
 chatnet ecnu user-info
 ```
 
-认证日志：
+认证日志和上网明细已经下沉到隐藏的 debug 路径，不在常规 help 中展示：
 
 ```bash
-chatnet ecnu auth-log --limit 10
-chatnet ecnu auth-log --start "2026-06-01 00:00:00" --end "2026-06-15 23:59:59" --limit 10
-```
-
-上网明细：
-
-```bash
-chatnet ecnu detail-log --limit 10
-chatnet ecnu detail-log --start "2026-06-01 00:00:00" --end "2026-06-15 23:59:59" --limit 10
+chatnet ecnu debug auth-log --limit 10
+chatnet ecnu debug auth-log --start "2026-06-01 00:00:00" --end "2026-06-15 23:59:59" --limit 10
+chatnet ecnu debug detail-log --limit 10
+chatnet ecnu debug detail-log --start "2026-06-01 00:00:00" --end "2026-06-15 23:59:59" --limit 10
 ```
 
 ## 6. 访客管理
@@ -215,7 +211,7 @@ chatnet ecnu visitor update --id 10256703 --remark GuestA --password 'Temp!235' 
 标准验收流程是：
 
 ```bash
-chatnet ecnu login-auto --rounds 3 --topk 5 -I
+chatnet ecnu login --rounds 3 --topk 5 -I
 chatnet ecnu visitor create --remark GuestA -I
 chatnet ecnu visitor list
 chatnet ecnu visitor update --id <created-id> --remark GuestA --password '<final-password>' -I
@@ -253,7 +249,7 @@ CI 或脚本中建议使用 `-I`，避免意外等待输入。
 
 ### 缺少 OCR 依赖
 
-如果 `login-auto` 报缺少验证码依赖：
+如果 `login` 报缺少验证码依赖：
 
 ```bash
 pip install -e ".[captcha]"
@@ -264,7 +260,7 @@ pip install -e ".[captcha]"
 通常表示会话失效，重新登录：
 
 ```bash
-chatnet ecnu login-auto --rounds 3 --topk 5 -I
+chatnet ecnu login --rounds 3 --topk 5 -I
 ```
 
 ### 服务端要求短信验证码
@@ -272,7 +268,7 @@ chatnet ecnu login-auto --rounds 3 --topk 5 -I
 补充 `--sms-code`：
 
 ```bash
-chatnet ecnu login-auto --sms-code 123456 -I
+chatnet ecnu login --sms-code 123456 -I
 ```
 
 ### 访客创建没有新增记录
@@ -305,3 +301,4 @@ chatnet ecnu visitor create --remark GuestA --dry-run -I
 - `~/.chatarch/envs/ECNU/.env` 和 session 文件应只保存在本机。
 - `cookie-header` 输出是敏感信息，使用后不要贴到 issue、PR 或日志。
 - `--cookie`、`--state-file`、`--env-file`、`--base-url` 等高级选项仍可用于本地调试/隔离验证，但默认不在 help 中暴露。
+- `login-auto`、`auth-log`、`detail-log` 仍保留为隐藏兼容/debug 路径，但普通使用应优先走 `login` 与其余顶层摘要命令。

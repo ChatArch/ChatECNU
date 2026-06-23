@@ -85,20 +85,24 @@ def test_ecnu_mock_cli_runs_full_command_chain(monkeypatch, tmp_path):
     runner = CliRunner()
 
     invoke_ok(runner, ["ecnu", "login-init", "--captcha-path", str(tmp_path / "captcha.png")])
-    invoke_ok(runner, ["ecnu", "login", "--username", "mock-user", "--password", "secret", "--captcha", "1234", "-I"])
-    invoke_ok(runner, ["ecnu", "login-auto", "--username", "mock-user", "--password", "secret", "--rounds", "1", "--topk", "1", "-I"])
+    manual = invoke_ok(runner, ["ecnu", "login", "--username", "mock-user", "--password", "secret", "--captcha", "1234", "-I"])
+    assert "Login succeeded." in manual
+    auto = invoke_ok(runner, ["ecnu", "login", "--username", "mock-user", "--password", "secret", "--rounds", "1", "--topk", "1", "-I"])
+    assert "Login succeeded." in auto
     session = invoke_ok(runner, ["ecnu", "status"])
-    assert session["cookies"]["PHPSESSID_8800"] == "***"
+    assert "Username: mock-user" in session
+    session_json = invoke_ok(runner, ["ecnu", "status", "--json"])
+    assert session_json["cookies"]["PHPSESSID_8800"] == "***"
     assert invoke_ok(runner, ["ecnu", "cookie-header"]) == "PHPSESSID_8800=secret-cookie\n"
-    invoke_ok(runner, ["ecnu", "home"])
-    invoke_ok(runner, ["ecnu", "user-info"])
-    invoke_ok(runner, ["ecnu", "auth-log", "--limit", "1"])
-    invoke_ok(runner, ["ecnu", "detail-log", "--limit", "1"])
-    invoke_ok(runner, ["ecnu", "visitor", "list"])
-    invoke_ok(runner, ["ecnu", "visitor", "get", "--id", "10256703"])
-    invoke_ok(runner, ["ecnu", "visitor", "get", "--account", "mockm1"])
+    assert "Home summary" in invoke_ok(runner, ["ecnu", "home"])
+    assert "账号: mock-user" in invoke_ok(runner, ["ecnu", "user-info"])
+    assert "Authentication logs" in invoke_ok(runner, ["ecnu", "debug", "auth-log", "--limit", "1"])
+    assert "Network detail logs" in invoke_ok(runner, ["ecnu", "debug", "detail-log", "--limit", "1"])
+    assert "Visitor accounts" in invoke_ok(runner, ["ecnu", "visitor", "list"])
+    assert "visitor_id: 10256703" in invoke_ok(runner, ["ecnu", "visitor", "get", "--id", "10256703"])
+    assert "account: mockm1" in invoke_ok(runner, ["ecnu", "visitor", "get", "--account", "mockm1"])
     created = invoke_ok(runner, ["ecnu", "visitor", "create", "--remark", "GuestB", "--dry-run", "-I"])
-    assert created["response"]["password"] == "Init!234"
+    assert created == "Create visitor: dry run ready.\n"
     invoke_ok(
         runner,
         [
@@ -152,11 +156,11 @@ def test_ecnu_env_file_override_supplies_login_defaults(monkeypatch, tmp_path):
 
     result = CliRunner().invoke(
         main,
-        ["ecnu", "--env-file", str(env_file), "login", "--captcha", "1234", "-I"],
+        ["ecnu", "--env-file", str(env_file), "login", "--rounds", "1", "--topk", "1", "-I"],
     )
 
     assert result.exit_code == 0, result.output
-    assert ("login", "env-user", "env-secret", "1234", None) in fake.calls
+    assert ("login_auto", "env-user", "env-secret", None, 1, 1, str(tmp_path / "chatarch" / "cache" / "chatnet" / "ecnu-login-captcha.png")) in fake.calls
 
 
 def test_ecnu_help_keeps_advanced_commands_hidden():
@@ -164,11 +168,15 @@ def test_ecnu_help_keeps_advanced_commands_hidden():
 
     assert result.exit_code == 0
     assert "status" in result.output
-    assert "login-auto" in result.output
     assert "visitor" in result.output
+    assert "home" in result.output
     assert "cookie-header" not in result.output
     assert "login-init" not in result.output
+    assert "login-auto" not in result.output
     assert "selftest" not in result.output
+    assert "auth-log" not in result.output
+    assert "detail-log" not in result.output
+    assert "debug" not in result.output
     assert "--cookie" not in result.output
     assert "--state-file" not in result.output
 

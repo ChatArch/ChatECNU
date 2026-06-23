@@ -39,24 +39,23 @@ chatenv cat -t ecnu
 ```
 
 ```bash
-chatnet ecnu login-auto --username "$ECNU_USERNAME" --password "$ECNU_PASSWORD"
+chatnet ecnu login --username "$ECNU_USERNAME" --password "$ECNU_PASSWORD"
 chatnet ecnu status
 chatnet ecnu home
-chatnet ecnu auth-log --limit 10
 chatnet ecnu visitor list
 chatnet ecnu visitor create --remark GuestB
 chatnet ecnu visitor update --id 10256703 --remark GuestB --password 'Temp!235'
 ```
 
-自动验证码登录依赖可选 OCR extra：
+默认 `login` 会走自动验证码登录；自动识别依赖可选 OCR extra：
 
 ```bash
 pip install -e ".[captcha]"
-chatnet ecnu login-auto --username "$ECNU_USERNAME" --password "$ECNU_PASSWORD"
+chatnet ecnu login --username "$ECNU_USERNAME" --password "$ECNU_PASSWORD"
 ```
 
-缺少可恢复参数时，命令会按 ChatArch 规范进入交互补问；`-i` 强制交互，`-I` 禁止交互并快速失败。密码、Cookie、短信验证码等敏感值不要写入文档或提交记录。
-默认 help 只展示常用命令；`login-init`、`cookie-header`、`selftest` 等诊断/敏感命令仍可直接调用，但不在常规帮助中暴露。
+缺少可恢复参数时，命令会按 ChatArch 规范进入交互补问；`-i` 强制交互，`-I` 禁止交互并快速失败。默认输出为人类可读摘要，显式传 `--json` 才输出原始 JSON。密码、Cookie、短信验证码等敏感值不要写入文档或提交记录。
+默认 help 只展示常用命令；`login-init`、`login-auto`、`cookie-header`、`selftest` 和日志类 debug 命令仍可直接调用，但不在常规帮助中暴露。
 
 完整使用文档见 [`docs/ecnu.md`](docs/ecnu.md)。
 

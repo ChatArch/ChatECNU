@@ -8,6 +8,8 @@
 - Add a non-network `ECNUConfig.test()` implementation so `chatenv test -t ecnu` validates the installed provider without raising `NotImplementedError`.
 - Trim the default `chatnet ecnu --help` surface by hiding advanced/sensitive diagnostics such as `login-init`, `cookie-header`, `selftest`, low-level state/cookie options, and `visitor lock`.
 - Add `chatnet ecnu status` as the user-facing redacted session/status command while keeping `session-info` as a hidden compatibility alias.
+- Make `chatnet ecnu login` the primary OCR-backed login entrypoint, keep `login-auto` as a hidden compatibility alias, and move log queries under hidden `debug` commands.
+- Switch user-facing ECNU commands to human-readable summaries by default with opt-in `--json` output.
 - Refactor ECNU login input resolution so manual and auto login share the same credential handling path.
 
 ## 2026-06-15

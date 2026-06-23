@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Prepare `0.1.2` release in the feature PR so the post-merge tag can publish a continuous next-patch version.
 - Remove the unused top-level `chatnet hello` template command so the CLI only exposes real product functionality.
 - Add a non-network `ECNUConfig.test()` implementation so `chatenv test -t ecnu` validates the installed provider without raising `NotImplementedError`.
 - Trim the default `chatnet ecnu --help` surface by hiding advanced/sensitive diagnostics such as `login-init`, `cookie-header`, `selftest`, low-level state/cookie options, and `visitor lock`.

@@ -4,6 +4,8 @@
 
 ### Changed
 
+- Remove the unused top-level `chatnet hello` template command so the CLI only exposes real product functionality.
+- Add a non-network `ECNUConfig.test()` implementation so `chatenv test -t ecnu` validates the installed provider without raising `NotImplementedError`.
 - Trim the default `chatnet ecnu --help` surface by hiding advanced/sensitive diagnostics such as `login-init`, `cookie-header`, `selftest`, low-level state/cookie options, and `visitor lock`.
 - Add `chatnet ecnu status` as the user-facing redacted session/status command while keeping `session-info` as a hidden compatibility alias.
 - Refactor ECNU login input resolution so manual and auto login share the same credential handling path.

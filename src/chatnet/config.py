@@ -17,5 +17,18 @@ class ECNUConfig(BaseEnvConfig):
     ECNU_COOKIE = EnvField("ECNU_COOKIE", desc="Authenticated ECNU portal Cookie header.", is_sensitive=True)
     ECNU_BASE_URL = EnvField("ECNU_BASE_URL", default="https://login.ecnu.edu.cn:8800", desc="ECNU portal base URL.")
 
+    @classmethod
+    def test(cls) -> None:
+        """Validate that the ECNU config schema is loadable without network access."""
+
+        print(f"Testing {cls._title}...")
+        base_url = cls.ECNU_BASE_URL.value or cls.ECNU_BASE_URL.default
+        if not base_url:
+            print("❌ Failed: ECNU_BASE_URL not set")
+            return
+        print(f"✅ Config loaded. Base URL: {base_url}")
+        print(f"   Username configured: {bool(cls.ECNU_USERNAME.value)}")
+        print(f"   Cookie configured: {bool(cls.ECNU_COOKIE.value)}")
+
 
 __all__ = ["ECNUConfig"]

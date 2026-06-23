@@ -23,7 +23,6 @@ ChatNet 是 ChatArch 系列的网络与校园网 CLI，当前提供 ECNU 自助�
 
 ```bash
 pip install -e ".[dev]"
-chatnet hello ChatArch
 chatnet ecnu --help
 python -m pytest -q
 python -m build

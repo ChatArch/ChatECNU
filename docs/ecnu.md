@@ -48,6 +48,14 @@ ECNU_BASE_URL='https://login.ecnu.edu.cn:8800'
 chatenv cat -t ecnu
 ```
 
+验证 provider 是否可被 chatenv 发现：
+
+```bash
+chatenv test -t ecnu
+```
+
+`chatenv test -t ecnu` 只做本地配置 schema/provider 检查，不访问 ECNU 站点。
+
 如果需要维护多个 profile：
 
 ```bash

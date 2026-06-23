@@ -87,7 +87,7 @@ def test_ecnu_mock_cli_runs_full_command_chain(monkeypatch, tmp_path):
     invoke_ok(runner, ["ecnu", "login-init", "--captcha-path", str(tmp_path / "captcha.png")])
     invoke_ok(runner, ["ecnu", "login", "--username", "mock-user", "--password", "secret", "--captcha", "1234", "-I"])
     invoke_ok(runner, ["ecnu", "login-auto", "--username", "mock-user", "--password", "secret", "--rounds", "1", "--topk", "1", "-I"])
-    session = invoke_ok(runner, ["ecnu", "session-info"])
+    session = invoke_ok(runner, ["ecnu", "status"])
     assert session["cookies"]["PHPSESSID_8800"] == "***"
     assert invoke_ok(runner, ["ecnu", "cookie-header"]) == "PHPSESSID_8800=secret-cookie\n"
     invoke_ok(runner, ["ecnu", "home"])
@@ -157,3 +157,28 @@ def test_ecnu_env_file_override_supplies_login_defaults(monkeypatch, tmp_path):
 
     assert result.exit_code == 0, result.output
     assert ("login", "env-user", "env-secret", "1234", None) in fake.calls
+
+
+def test_ecnu_help_keeps_advanced_commands_hidden():
+    result = CliRunner().invoke(main, ["ecnu", "--help"])
+
+    assert result.exit_code == 0
+    assert "status" in result.output
+    assert "login-auto" in result.output
+    assert "visitor" in result.output
+    assert "cookie-header" not in result.output
+    assert "login-init" not in result.output
+    assert "selftest" not in result.output
+    assert "--cookie" not in result.output
+    assert "--state-file" not in result.output
+
+
+def test_ecnu_visitor_help_keeps_lock_hidden():
+    result = CliRunner().invoke(main, ["ecnu", "visitor", "--help"])
+
+    assert result.exit_code == 0
+    assert "list" in result.output
+    assert "create" in result.output
+    assert "update" in result.output
+    assert "delete" in result.output
+    assert "lock" not in result.output

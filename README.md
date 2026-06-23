@@ -24,7 +24,7 @@ ChatNet 是 ChatArch 系列的网络与校园网 CLI，当前提供 ECNU 自助�
 ```bash
 pip install -e ".[dev]"
 chatnet hello ChatArch
-chatnet ecnu selftest
+chatnet ecnu --help
 python -m pytest -q
 python -m build
 ```
@@ -40,8 +40,8 @@ chatenv cat -t ecnu
 ```
 
 ```bash
-chatnet ecnu login-init
-chatnet ecnu login --username "$ECNU_USERNAME" --password "$ECNU_PASSWORD" --captcha ABCD
+chatnet ecnu login-auto --username "$ECNU_USERNAME" --password "$ECNU_PASSWORD"
+chatnet ecnu status
 chatnet ecnu home
 chatnet ecnu auth-log --limit 10
 chatnet ecnu visitor list
@@ -57,6 +57,7 @@ chatnet ecnu login-auto --username "$ECNU_USERNAME" --password "$ECNU_PASSWORD"
 ```
 
 缺少可恢复参数时，命令会按 ChatArch 规范进入交互补问；`-i` 强制交互，`-I` 禁止交互并快速失败。密码、Cookie、短信验证码等敏感值不要写入文档或提交记录。
+默认 help 只展示常用命令；`login-init`、`cookie-header`、`selftest` 等诊断/敏感命令仍可直接调用，但不在常规帮助中暴露。
 
 完整使用文档见 [`docs/ecnu.md`](docs/ecnu.md)。
 

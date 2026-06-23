@@ -52,16 +52,27 @@ VISITOR_ID_SCHEMA = CommandSchema(
 
 
 @click.group(name="ecnu")
-@click.option("--base-url", default=None, help="ECNU portal base URL. Defaults to chatenv ECNU_BASE_URL.")
+@click.option(
+    "--base-url",
+    default=None,
+    hidden=True,
+    help="ECNU portal base URL. Defaults to chatenv ECNU_BASE_URL.",
+)
 @click.option(
     "--state-file",
     default=None,
+    hidden=True,
     help="Session state JSON file. Defaults to $CHATARCH_HOME/cache/chatnet/ecnu-session.json.",
 )
-@click.option("--cookie", default=None, help="Existing authenticated Cookie header. Defaults to chatenv ECNU_COOKIE.")
+@click.option(
+    "--cookie",
+    default=None,
+    hidden=True,
+    help="Existing authenticated Cookie header. Defaults to chatenv ECNU_COOKIE.",
+)
 @click.option("-e", "--env", "env_profile", default=None, help="Use a named chatenv ECNU profile.")
-@click.option("--env-file", default=None, help="Explicit env file override for ECNU values.")
-@click.option("--timeout", default=20, show_default=True, type=int, help="HTTP timeout in seconds.")
+@click.option("--env-file", default=None, hidden=True, help="Explicit env file override for ECNU values.")
+@click.option("--timeout", default=20, show_default=True, type=int, hidden=True, help="HTTP timeout in seconds.")
 @click.pass_context
 def cli(
     ctx: click.Context,
@@ -83,7 +94,7 @@ def cli(
     }
 
 
-@cli.command(name="selftest")
+@cli.command(name="selftest", hidden=True)
 def selftest() -> None:
     """Run local parser self-test without network access."""
 
@@ -92,10 +103,11 @@ def selftest() -> None:
     echo_json(run_selftest())
 
 
-@cli.command(name="login-init")
+@cli.command(name="login-init", hidden=True)
 @click.option(
     "--captcha-path",
     default=None,
+    hidden=True,
     help="Where to save the captcha image. Defaults to $CHATARCH_HOME/cache/chatnet/ecnu-login-captcha.png.",
 )
 @click.pass_context
@@ -123,15 +135,12 @@ def login(
 ) -> None:
     """Complete login using username, password, and captcha."""
 
-    values = resolve_command_inputs(
-        schema=LOGIN_SCHEMA,
-        provided={
-            "username": username or ECNUConfig.ECNU_USERNAME.value,
-            "password": password or ECNUConfig.ECNU_PASSWORD.value,
-            "captcha": captcha,
-        },
+    values = resolve_login_inputs(
+        captcha=captcha,
+        include_captcha=True,
+        password=password,
+        username=username,
         interactive=interactive,
-        usage="Usage: chatnet ecnu login --username TEXT --password TEXT --captcha TEXT [-i|-I]",
     )
     echo_json(call_client(ctx, lambda client: client.login(values["username"], values["password"], values["captcha"], sms_code=sms_code)))
 
@@ -161,12 +170,7 @@ def login_auto(
 ) -> None:
     """Auto-solve captcha with optional OCR dependencies and try login."""
 
-    values = resolve_command_inputs(
-        schema=LOGIN_AUTO_SCHEMA,
-        provided={"username": username or ECNUConfig.ECNU_USERNAME.value, "password": password or ECNUConfig.ECNU_PASSWORD.value},
-        interactive=interactive,
-        usage="Usage: chatnet ecnu login-auto --username TEXT --password TEXT [-i|-I]",
-    )
+    values = resolve_login_inputs(username=username, password=password, interactive=interactive)
     target_path = Path(captcha_path).expanduser() if captcha_path else default_captcha_path()
     echo_json(
         call_client(
@@ -183,15 +187,23 @@ def login_auto(
     )
 
 
-@cli.command(name="session-info")
+@cli.command(name="status")
+@click.pass_context
+def status(ctx: click.Context) -> None:
+    """Show saved login/session status with Cookie values redacted."""
+
+    echo_json(session_status(ctx))
+
+
+@cli.command(name="session-info", hidden=True)
 @click.pass_context
 def session_info(ctx: click.Context) -> None:
     """Show saved session metadata with Cookie values redacted."""
 
-    echo_json(redact_state(make_client(ctx).state))
+    echo_json(session_status(ctx))
 
 
-@cli.command(name="cookie-header")
+@cli.command(name="cookie-header", hidden=True)
 @click.pass_context
 def cookie_header(ctx: click.Context) -> None:
     """Print the current Cookie header from state/session."""
@@ -340,7 +352,7 @@ def visitor_delete(ctx: click.Context, visitor_id: str | None, dry_run: bool, in
     echo_json(call_client(ctx, lambda client: client.delete_visitor(values["visitor_id"], dry_run=dry_run)))
 
 
-@visitor_group.command(name="lock")
+@visitor_group.command(name="lock", hidden=True)
 @click.option("--id", "visitor_id", default=None, help="Visitor record id.")
 @click.option("--dry-run", is_flag=True, help="Print request spec without submitting.")
 @add_interactive_option
@@ -378,6 +390,30 @@ def call_client(ctx: click.Context, func: Callable[[Any], Any]) -> Any:
 
 def echo_json(data: Any) -> None:
     click.echo(json.dumps(data, ensure_ascii=False, indent=2))
+
+
+def resolve_login_inputs(
+    *,
+    username: str | None,
+    password: str | None,
+    interactive: bool | None,
+    captcha: str | None = None,
+    include_captcha: bool = False,
+) -> dict[str, str]:
+    schema = LOGIN_SCHEMA if include_captcha else LOGIN_AUTO_SCHEMA
+    provided = {
+        "username": username or ECNUConfig.ECNU_USERNAME.value,
+        "password": password or ECNUConfig.ECNU_PASSWORD.value,
+    }
+    usage = "Usage: chatnet ecnu login-auto --username TEXT --password TEXT [-i|-I]"
+    if include_captcha:
+        provided["captcha"] = captcha
+        usage = "Usage: chatnet ecnu login --username TEXT --password TEXT --captcha TEXT [-i|-I]"
+    return resolve_command_inputs(schema=schema, provided=provided, interactive=interactive, usage=usage)
+
+
+def session_status(ctx: click.Context) -> dict[str, Any]:
+    return redact_state(make_client(ctx).state)
 
 
 def load_chatenv(env_profile: str | None = None, env_file: str | None = None) -> None:

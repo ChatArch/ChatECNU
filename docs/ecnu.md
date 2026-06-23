@@ -21,10 +21,9 @@ pip install -e ".[captcha]"
 ```bash
 chatnet --help
 chatnet ecnu --help
-chatnet ecnu selftest
 ```
 
-`selftest` 只验证本地 HTML parser 和字段校验，不访问真实站点。
+默认帮助只展示日常使用命令。`selftest` 等诊断命令仍可直接调用，但不会出现在常规帮助中。
 
 ## 2. 配置
 
@@ -54,13 +53,13 @@ chatenv cat -t ecnu
 ```bash
 chatenv save work -t ecnu
 chatenv use work -t ecnu
-chatnet ecnu -e work session-info
+chatnet ecnu -e work status
 ```
 
 也可以用临时 env 文件覆盖：
 
 ```bash
-chatnet ecnu --env-file ./ecnu.env session-info
+chatnet ecnu --env-file ./ecnu.env status
 ```
 
 ## 3. 默认文件位置
@@ -80,7 +79,7 @@ chatnet ecnu --env-file ./ecnu.env session-info
 如需隔离会话，可显式指定：
 
 ```bash
-chatnet ecnu --state-file ./ecnu-session.json session-info
+chatnet ecnu --state-file ./ecnu-session.json status
 ```
 
 ## 4. 登录
@@ -104,9 +103,9 @@ chatnet ecnu login-auto --rounds 3 --topk 5 -I
 chatnet ecnu login-auto --sms-code 123456 --rounds 3 --topk 5 -I
 ```
 
-### 手动验证码登录
+### 手动验证码登录（高级）
 
-先下载验证码：
+自动 OCR 不可用时，可以直接调用隐藏的 `login-init` 诊断命令下载验证码：
 
 ```bash
 chatnet ecnu login-init
@@ -127,10 +126,10 @@ chatnet ecnu login --username "your-ecnu-username" --password "your-password" --
 ### 查看会话
 
 ```bash
-chatnet ecnu session-info
+chatnet ecnu status
 ```
 
-`session-info` 会脱敏 Cookie 值。需要导出 Cookie header 时使用：
+`status` 会脱敏 Cookie 值。需要本地调试时，仍可直接调用隐藏的 `cookie-header` 命令导出 Cookie header：
 
 ```bash
 chatnet ecnu cookie-header
@@ -215,11 +214,10 @@ chatnet ecnu visitor update --id <created-id> --remark GuestA --password '<final
 chatnet ecnu visitor list
 ```
 
-### 删除或锁定
+### 删除
 
 ```bash
 chatnet ecnu visitor delete --id 10256703 -I
-chatnet ecnu visitor lock --id 10256703 -I
 ```
 
 修改类命令支持 `--dry-run`：
@@ -228,8 +226,9 @@ chatnet ecnu visitor lock --id 10256703 -I
 chatnet ecnu visitor create --remark GuestA --dry-run -I
 chatnet ecnu visitor update --id 10256703 --remark GuestA --password 'Temp!235' --dry-run -I
 chatnet ecnu visitor delete --id 10256703 --dry-run -I
-chatnet ecnu visitor lock --id 10256703 --dry-run -I
 ```
+
+`visitor lock` 属于低频管理动作，仍可直接调用，但默认不在 `visitor --help` 中展示。
 
 ## 7. 交互规范
 
@@ -297,3 +296,4 @@ chatnet ecnu visitor create --remark GuestA --dry-run -I
 - 本仓库示例统一使用虚构账号，例如 `20260000000m2`。
 - `~/.chatarch/envs/ECNU/.env` 和 session 文件应只保存在本机。
 - `cookie-header` 输出是敏感信息，使用后不要贴到 issue、PR 或日志。
+- `--cookie`、`--state-file`、`--env-file`、`--base-url` 等高级选项仍可用于本地调试/隔离验证，但默认不在 help 中暴露。

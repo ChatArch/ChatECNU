@@ -21,10 +21,9 @@ pip install -e ".[captcha]"
 ```bash
 chatnet --help
 chatnet ecnu --help
-chatnet ecnu selftest
 ```
 
-`selftest` 只验证本地 HTML parser 和字段校验，不访问真实站点。
+默认帮助只展示日常使用命令。`selftest` 等诊断命令仍可直接调用，但不会出现在常规帮助中。
 
 ## 2. 配置
 
@@ -41,6 +40,9 @@ ECNU_USERNAME='your-ecnu-username'
 ECNU_PASSWORD='your-ecnu-password'
 ECNU_COOKIE=''
 ECNU_BASE_URL='https://login.ecnu.edu.cn:8800'
+ECNU_VISITOR_PASSWORD1=''
+ECNU_VISITOR_PASSWORD2=''
+ECNU_VISITOR_REMARK='default'
 ```
 
 查看配置时默认会 mask 敏感字段：
@@ -49,18 +51,26 @@ ECNU_BASE_URL='https://login.ecnu.edu.cn:8800'
 chatenv cat -t ecnu
 ```
 
+验证 provider 是否可被 chatenv 发现：
+
+```bash
+chatenv test -t ecnu
+```
+
+`chatenv test -t ecnu` 只做本地配置 schema/provider 检查，不访问 ECNU 站点。
+
 如果需要维护多个 profile：
 
 ```bash
 chatenv save work -t ecnu
 chatenv use work -t ecnu
-chatnet ecnu -e work session-info
+chatnet ecnu -e work status
 ```
 
 也可以用临时 env 文件覆盖：
 
 ```bash
-chatnet ecnu --env-file ./ecnu.env session-info
+chatnet ecnu --env-file ./ecnu.env status
 ```
 
 ## 3. 默认文件位置
@@ -80,17 +90,17 @@ chatnet ecnu --env-file ./ecnu.env session-info
 如需隔离会话，可显式指定：
 
 ```bash
-chatnet ecnu --state-file ./ecnu-session.json session-info
+chatnet ecnu --state-file ./ecnu-session.json status
 ```
 
 ## 4. 登录
 
-### 自动验证码登录
+### 默认登录
 
 推荐使用：
 
 ```bash
-chatnet ecnu login-auto --rounds 3 --topk 5 -I
+chatnet ecnu login --rounds 3 --topk 5 -I
 ```
 
 默认逻辑：
@@ -99,14 +109,15 @@ chatnet ecnu login-auto --rounds 3 --topk 5 -I
 - OCR 生成 top-k 候选。
 - 候选失败后继续尝试，全部失败后刷新验证码。
 - 如果服务端要求短信验证码，需要通过 `--sms-code` 提供。
+- 默认输出人类可读摘要；如果要原始结构，显式加 `--json`。
 
 ```bash
-chatnet ecnu login-auto --sms-code 123456 --rounds 3 --topk 5 -I
+chatnet ecnu login --sms-code 123456 --rounds 3 --topk 5 -I
 ```
 
-### 手动验证码登录
+### 手动验证码登录（高级）
 
-先下载验证码：
+自动 OCR 不可用时，可以直接调用隐藏的 `login-init` 诊断命令下载验证码：
 
 ```bash
 chatnet ecnu login-init
@@ -127,10 +138,10 @@ chatnet ecnu login --username "your-ecnu-username" --password "your-password" --
 ### 查看会话
 
 ```bash
-chatnet ecnu session-info
+chatnet ecnu status
 ```
 
-`session-info` 会脱敏 Cookie 值。需要导出 Cookie header 时使用：
+`status` 默认输出摘要。需要原始结构时使用 `--json`。需要本地调试时，仍可直接调用隐藏的 `cookie-header` 命令导出 Cookie header：
 
 ```bash
 chatnet ecnu cookie-header
@@ -158,18 +169,13 @@ chatnet ecnu home
 chatnet ecnu user-info
 ```
 
-认证日志：
+认证日志和上网明细已经下沉到隐藏的 debug 路径，不在常规 help 中展示：
 
 ```bash
-chatnet ecnu auth-log --limit 10
-chatnet ecnu auth-log --start "2026-06-01 00:00:00" --end "2026-06-15 23:59:59" --limit 10
-```
-
-上网明细：
-
-```bash
-chatnet ecnu detail-log --limit 10
-chatnet ecnu detail-log --start "2026-06-01 00:00:00" --end "2026-06-15 23:59:59" --limit 10
+chatnet ecnu debug auth-log --limit 10
+chatnet ecnu debug auth-log --start "2026-06-01 00:00:00" --end "2026-06-15 23:59:59" --limit 10
+chatnet ecnu debug detail-log --limit 10
+chatnet ecnu debug detail-log --start "2026-06-01 00:00:00" --end "2026-06-15 23:59:59" --limit 10
 ```
 
 ## 6. 访客管理
@@ -192,6 +198,33 @@ chatnet ecnu visitor create --remark GuestA -I
 
 备注约束来自页面校验：2-14 位中文或英文字符。
 
+### 默认访客账号
+
+如果希望固定维护当前账号下的默认访客账号，可以配置：
+
+```bash
+ECNU_VISITOR_PASSWORD1='Temp!235'
+ECNU_VISITOR_PASSWORD2='Temp!236'
+ECNU_VISITOR_REMARK='default'
+```
+
+然后运行：
+
+```bash
+chatnet ecnu visitor default -I
+```
+
+行为规则：
+
+- 只有 `ECNU_VISITOR_PASSWORD1` 时，维护 `<ECNU_USERNAME>m1`
+- 同时存在 `ECNU_VISITOR_PASSWORD1` 和 `ECNU_VISITOR_PASSWORD2` 时，维护 `<ECNU_USERNAME>m1` 与 `<ECNU_USERNAME>m2`
+- 如果目标账号不存在，命令会先创建，再按对应密码更新
+- 也可以用参数覆盖：
+
+```bash
+chatnet ecnu visitor default --password1 'Temp!235' --password2 'Temp!236' --remark default -I
+```
+
 ### 编辑访客密码
 
 如果要设置最终密码，需要对创建后的访客 `id` 执行编辑：
@@ -208,18 +241,17 @@ chatnet ecnu visitor update --id 10256703 --remark GuestA --password 'Temp!235' 
 标准验收流程是：
 
 ```bash
-chatnet ecnu login-auto --rounds 3 --topk 5 -I
+chatnet ecnu login --rounds 3 --topk 5 -I
 chatnet ecnu visitor create --remark GuestA -I
 chatnet ecnu visitor list
 chatnet ecnu visitor update --id <created-id> --remark GuestA --password '<final-password>' -I
 chatnet ecnu visitor list
 ```
 
-### 删除或锁定
+### 删除
 
 ```bash
 chatnet ecnu visitor delete --id 10256703 -I
-chatnet ecnu visitor lock --id 10256703 -I
 ```
 
 修改类命令支持 `--dry-run`：
@@ -228,8 +260,9 @@ chatnet ecnu visitor lock --id 10256703 -I
 chatnet ecnu visitor create --remark GuestA --dry-run -I
 chatnet ecnu visitor update --id 10256703 --remark GuestA --password 'Temp!235' --dry-run -I
 chatnet ecnu visitor delete --id 10256703 --dry-run -I
-chatnet ecnu visitor lock --id 10256703 --dry-run -I
 ```
+
+`visitor lock` 属于低频管理动作，仍可直接调用，但默认不在 `visitor --help` 中展示。
 
 ## 7. 交互规范
 
@@ -246,7 +279,7 @@ CI 或脚本中建议使用 `-I`，避免意外等待输入。
 
 ### 缺少 OCR 依赖
 
-如果 `login-auto` 报缺少验证码依赖：
+如果 `login` 报缺少验证码依赖：
 
 ```bash
 pip install -e ".[captcha]"
@@ -257,7 +290,7 @@ pip install -e ".[captcha]"
 通常表示会话失效，重新登录：
 
 ```bash
-chatnet ecnu login-auto --rounds 3 --topk 5 -I
+chatnet ecnu login --rounds 3 --topk 5 -I
 ```
 
 ### 服务端要求短信验证码
@@ -265,7 +298,7 @@ chatnet ecnu login-auto --rounds 3 --topk 5 -I
 补充 `--sms-code`：
 
 ```bash
-chatnet ecnu login-auto --sms-code 123456 -I
+chatnet ecnu login --sms-code 123456 -I
 ```
 
 ### 访客创建没有新增记录
@@ -297,3 +330,6 @@ chatnet ecnu visitor create --remark GuestA --dry-run -I
 - 本仓库示例统一使用虚构账号，例如 `20260000000m2`。
 - `~/.chatarch/envs/ECNU/.env` 和 session 文件应只保存在本机。
 - `cookie-header` 输出是敏感信息，使用后不要贴到 issue、PR 或日志。
+- `--cookie`、`--state-file`、`--env-file`、`--base-url` 等高级选项仍可用于本地调试/隔离验证，但默认不在 help 中暴露。
+- `login-auto`、`auth-log`、`detail-log` 仍保留为隐藏兼容/debug 路径，但普通使用应优先走 `login` 与其余顶层摘要命令。
+- `visitor default` 依赖 `ECNU_USERNAME` 与 `ECNU_VISITOR_PASSWORD1`；如果要维护第二个默认访客，再加 `ECNU_VISITOR_PASSWORD2`。

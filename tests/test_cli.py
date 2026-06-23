@@ -5,13 +5,6 @@ from chatnet.cli import main
 from chatnet.ecnu.cli import load_chatenv
 
 
-def test_hello_command_accepts_explicit_name():
-    result = CliRunner().invoke(main, ["hello", "ChatArch"])
-
-    assert result.exit_code == 0
-    assert "Hello, ChatArch!" in result.output
-
-
 def test_help_lists_ecnu_group():
     result = CliRunner().invoke(main, ["--help"])
 
@@ -40,3 +33,11 @@ def test_ecnu_config_loads_from_chatarch_envs(tmp_path, monkeypatch):
     assert ECNUConfig.ECNU_USERNAME.value == "from-chatarch"
     assert ECNUConfig.ECNU_PASSWORD.value == "secret"
     assert ECNUConfig.ECNU_BASE_URL.value == "https://example.invalid"
+
+
+def test_ecnu_config_test_does_not_raise(capsys):
+    ECNUConfig.test()
+
+    output = capsys.readouterr().out
+    assert "Testing ECNU" in output
+    assert "Config loaded" in output

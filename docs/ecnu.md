@@ -40,6 +40,9 @@ ECNU_USERNAME='your-ecnu-username'
 ECNU_PASSWORD='your-ecnu-password'
 ECNU_COOKIE=''
 ECNU_BASE_URL='https://login.ecnu.edu.cn:8800'
+ECNU_VISITOR_PASSWORD1=''
+ECNU_VISITOR_PASSWORD2=''
+ECNU_VISITOR_REMARK='default'
 ```
 
 查看配置时默认会 mask 敏感字段：
@@ -195,6 +198,33 @@ chatnet ecnu visitor create --remark GuestA -I
 
 备注约束来自页面校验：2-14 位中文或英文字符。
 
+### 默认访客账号
+
+如果希望固定维护当前账号下的默认访客账号，可以配置：
+
+```bash
+ECNU_VISITOR_PASSWORD1='Temp!235'
+ECNU_VISITOR_PASSWORD2='Temp!236'
+ECNU_VISITOR_REMARK='default'
+```
+
+然后运行：
+
+```bash
+chatnet ecnu visitor default -I
+```
+
+行为规则：
+
+- 只有 `ECNU_VISITOR_PASSWORD1` 时，维护 `<ECNU_USERNAME>m1`
+- 同时存在 `ECNU_VISITOR_PASSWORD1` 和 `ECNU_VISITOR_PASSWORD2` 时，维护 `<ECNU_USERNAME>m1` 与 `<ECNU_USERNAME>m2`
+- 如果目标账号不存在，命令会先创建，再按对应密码更新
+- 也可以用参数覆盖：
+
+```bash
+chatnet ecnu visitor default --password1 'Temp!235' --password2 'Temp!236' --remark default -I
+```
+
 ### 编辑访客密码
 
 如果要设置最终密码，需要对创建后的访客 `id` 执行编辑：
@@ -302,3 +332,4 @@ chatnet ecnu visitor create --remark GuestA --dry-run -I
 - `cookie-header` 输出是敏感信息，使用后不要贴到 issue、PR 或日志。
 - `--cookie`、`--state-file`、`--env-file`、`--base-url` 等高级选项仍可用于本地调试/隔离验证，但默认不在 help 中暴露。
 - `login-auto`、`auth-log`、`detail-log` 仍保留为隐藏兼容/debug 路径，但普通使用应优先走 `login` 与其余顶层摘要命令。
+- `visitor default` 依赖 `ECNU_USERNAME` 与 `ECNU_VISITOR_PASSWORD1`；如果要维护第二个默认访客，再加 `ECNU_VISITOR_PASSWORD2`。

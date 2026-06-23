@@ -10,6 +10,7 @@
 - Add `chatnet ecnu status` as the user-facing redacted session/status command while keeping `session-info` as a hidden compatibility alias.
 - Make `chatnet ecnu login` the primary OCR-backed login entrypoint, keep `login-auto` as a hidden compatibility alias, and move log queries under hidden `debug` commands.
 - Switch user-facing ECNU commands to human-readable summaries by default with opt-in `--json` output.
+- Add `chatnet ecnu visitor default` plus `ECNU_VISITOR_PASSWORD1`, `ECNU_VISITOR_PASSWORD2`, and `ECNU_VISITOR_REMARK` for deterministic default visitor provisioning.
 - Refactor ECNU login input resolution so manual and auto login share the same credential handling path.
 
 ## 2026-06-15

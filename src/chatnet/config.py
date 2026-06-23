@@ -16,6 +16,9 @@ class ECNUConfig(BaseEnvConfig):
     ECNU_PASSWORD = EnvField("ECNU_PASSWORD", desc="ECNU password.", is_sensitive=True)
     ECNU_COOKIE = EnvField("ECNU_COOKIE", desc="Authenticated ECNU portal Cookie header.", is_sensitive=True)
     ECNU_BASE_URL = EnvField("ECNU_BASE_URL", default="https://login.ecnu.edu.cn:8800", desc="ECNU portal base URL.")
+    ECNU_VISITOR_PASSWORD1 = EnvField("ECNU_VISITOR_PASSWORD1", desc="Default password for visitor account suffix m1.", is_sensitive=True)
+    ECNU_VISITOR_PASSWORD2 = EnvField("ECNU_VISITOR_PASSWORD2", desc="Default password for visitor account suffix m2.", is_sensitive=True)
+    ECNU_VISITOR_REMARK = EnvField("ECNU_VISITOR_REMARK", default="default", desc="Default remark used by `chatnet ecnu visitor default`.")
 
     @classmethod
     def test(cls) -> None:

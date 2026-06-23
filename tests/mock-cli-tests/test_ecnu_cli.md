@@ -19,7 +19,20 @@
 - Visitor mutation commands support `--dry-run`.
 - Visitor mutations default to readable summaries unless `--json` is requested.
 
-## Case 2: default help should hide advanced or sensitive commands
+## Case 2: visitor default should provision deterministic default visitor accounts
+
+### Setup
+
+- Set `ECNU_USERNAME`, `ECNU_VISITOR_PASSWORD1`, `ECNU_VISITOR_PASSWORD2`, and `ECNU_VISITOR_REMARK`.
+- Patch `make_client` with an in-memory fake client that initially has only `mock-userm1`.
+
+### Expected Behavior
+
+- Running `chatnet ecnu visitor default -I` updates `mock-userm1`.
+- The command creates `mock-userm2` if it does not exist, then updates its password.
+- The command prints a short human summary by default.
+
+## Case 3: default help should hide advanced or sensitive commands
 
 ### Setup
 
@@ -30,7 +43,7 @@
 - Common commands such as `status`, `login`, `home`, `visitor list`, `visitor create`, `visitor update`, and `visitor delete` are visible.
 - Advanced or sensitive commands/options such as `cookie-header`, `login-init`, `login-auto`, `selftest`, `auth-log`, `detail-log`, `debug`, `visitor lock`, `--cookie`, and `--state-file` are hidden.
 
-## Case 3: explicit env file should provide login defaults
+## Case 4: explicit env file should provide login defaults
 
 ### Setup
 

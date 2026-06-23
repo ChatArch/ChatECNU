@@ -50,6 +50,11 @@ VISITOR_ID_SCHEMA = CommandSchema(
     fields=(CommandField("visitor_id", prompt="visitor id", required=True),),
 )
 
+VISITOR_DEFAULT_SCHEMA = CommandSchema(
+    name="ecnu-visitor-default",
+    fields=(CommandField("password1", prompt="visitor password1", required=True, sensitive=True),),
+)
+
 
 @click.group(name="ecnu")
 @click.option(
@@ -404,6 +409,42 @@ def visitor_create(
     )
 
 
+@visitor_group.command(name="default")
+@click.option("--password1", default=None, help="Password for default visitor account suffix m1.")
+@click.option("--password2", default=None, help="Password for default visitor account suffix m2.")
+@click.option("--remark", default=None, help="Remark for default visitor account(s). Defaults to ECNU_VISITOR_REMARK.")
+@click.option("--json", "json_output", is_flag=True, help="Print raw JSON instead of a human summary.")
+@add_interactive_option
+@click.pass_context
+def visitor_default(
+    ctx: click.Context,
+    password1: str | None,
+    password2: str | None,
+    remark: str | None,
+    json_output: bool,
+    interactive: bool | None,
+) -> None:
+    """Ensure default visitor account(s) exist and update their passwords."""
+
+    resolved = resolve_default_visitor_inputs(
+        password1=password1,
+        password2=password2,
+        remark=remark,
+        interactive=interactive,
+    )
+    result = call_client(
+        ctx,
+        lambda client: ensure_default_visitors(
+            client,
+            username_prefix=resolved["username_prefix"],
+            password1=resolved["password1"],
+            password2=resolved["password2"],
+            remark=resolved["remark"],
+        ),
+    )
+    emit_default_visitor_result(result, json_output=json_output)
+
+
 @visitor_group.command(name="update")
 @click.option("--id", "visitor_id", default=None, help="Visitor record id.")
 @click.option("--remark", default=None, help="Visitor remark, 2-14 Chinese or English letters.")
@@ -585,6 +626,13 @@ def emit_mutation_result(result: dict[str, Any], *, json_output: bool, action: s
     click.echo(format_mutation_summary(result, action=action))
 
 
+def emit_default_visitor_result(result: dict[str, Any], *, json_output: bool) -> None:
+    if json_output:
+        echo_json(result)
+        return
+    click.echo(format_default_visitor_summary(result))
+
+
 def format_login_summary(result: dict[str, Any]) -> str:
     if "attempts" in result:
         return format_auto_login_summary(result)
@@ -718,6 +766,26 @@ def format_mutation_summary(result: dict[str, Any], *, action: str) -> str:
     return f"{action}: completed."
 
 
+def format_default_visitor_summary(result: dict[str, Any]) -> str:
+    items = result.get("visitors") or []
+    lines = [f"Default visitor sync complete. Accounts: {len(items)}"]
+    for item in items:
+        created = "created" if item.get("created") else "existing"
+        lines.append(
+            "- "
+            + ", ".join(
+                [
+                    f"account={item.get('account')}",
+                    f"id={item.get('visitor_id')}",
+                    f"state={created}",
+                    f"remark={item.get('remark')}",
+                    f"password_updated={item.get('password_updated')}",
+                ]
+            )
+        )
+    return "\n".join(lines)
+
+
 def resolve_login_inputs(
     *,
     username: str | None,
@@ -739,8 +807,87 @@ def resolve_login_inputs(
     return resolve_command_inputs(schema=schema, provided=provided, interactive=interactive, usage=usage)
 
 
+def resolve_default_visitor_inputs(
+    *,
+    password1: str | None,
+    password2: str | None,
+    remark: str | None,
+    interactive: bool | None,
+) -> dict[str, str]:
+    values = resolve_command_inputs(
+        schema=VISITOR_DEFAULT_SCHEMA,
+        provided={"password1": password1 or ECNUConfig.ECNU_VISITOR_PASSWORD1.value},
+        interactive=interactive,
+        usage="Usage: chatnet ecnu visitor default --password1 TEXT [--password2 TEXT] [--remark TEXT] [-i|-I]",
+    )
+    resolved_password1 = values["password1"]
+    resolved_password2 = password2 or ECNUConfig.ECNU_VISITOR_PASSWORD2.value
+    if not resolved_password1 and not resolved_password2:
+        raise click.UsageError(
+            "Set ECNU_VISITOR_PASSWORD1 (and optionally ECNU_VISITOR_PASSWORD2) or pass --password1/--password2."
+        )
+    if resolved_password2 and not resolved_password1:
+        raise click.UsageError("Password2 requires password1 so the default visitor order remains deterministic.")
+    username_prefix = ECNUConfig.ECNU_USERNAME.value
+    if not username_prefix:
+        raise click.UsageError("ECNU_USERNAME must be set before running `chatnet ecnu visitor default`.")
+    return {
+        "username_prefix": username_prefix,
+        "password1": resolved_password1,
+        "password2": resolved_password2 or "",
+        "remark": remark or ECNUConfig.ECNU_VISITOR_REMARK.value or "default",
+    }
+
+
 def session_status(ctx: click.Context) -> dict[str, Any]:
     return redact_state(make_client(ctx).state)
+
+
+def ensure_default_visitors(
+    client: Any,
+    *,
+    username_prefix: str,
+    password1: str,
+    password2: str,
+    remark: str,
+) -> dict[str, Any]:
+    desired = [(1, password1)]
+    if password2:
+        desired.append((2, password2))
+
+    visitors = client.list_visitors()
+    rows = visitors.get("rows") or []
+    results: list[dict[str, Any]] = []
+
+    for suffix, password in desired:
+        target_account = f"{username_prefix}m{suffix}"
+        row = find_visitor_row(rows, target_account)
+        created = False
+        if row is None:
+            client.create_visitor(remark, dry_run=False)
+            created = True
+            rows = (client.list_visitors().get("rows") or [])
+            row = find_visitor_row(rows, target_account)
+            if row is None:
+                raise click.ClickException(f"Visitor account {target_account} was not found after creation.")
+        client.update_visitor(row["visitor_id"], remark, password, dry_run=False)
+        results.append(
+            {
+                "account": target_account,
+                "visitor_id": row["visitor_id"],
+                "created": created,
+                "remark": remark,
+                "password_updated": True,
+            }
+        )
+    return {"count": len(results), "visitors": results}
+
+
+def find_visitor_row(rows: list[dict[str, Any]], account: str) -> dict[str, Any] | None:
+    for row in rows:
+        if row.get("account") == account:
+            return row
+    return None
 
 
 def load_chatenv(env_profile: str | None = None, env_file: str | None = None) -> None:

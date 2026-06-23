@@ -43,6 +43,7 @@ chatnet ecnu login --username "$ECNU_USERNAME" --password "$ECNU_PASSWORD"
 chatnet ecnu status
 chatnet ecnu home
 chatnet ecnu visitor list
+chatnet ecnu visitor default
 chatnet ecnu visitor create --remark GuestB
 chatnet ecnu visitor update --id 10256703 --remark GuestB --password 'Temp!235'
 ```
@@ -56,6 +57,7 @@ chatnet ecnu login --username "$ECNU_USERNAME" --password "$ECNU_PASSWORD"
 
 缺少可恢复参数时，命令会按 ChatArch 规范进入交互补问；`-i` 强制交互，`-I` 禁止交互并快速失败。默认输出为人类可读摘要，显式传 `--json` 才输出原始 JSON。密码、Cookie、短信验证码等敏感值不要写入文档或提交记录。
 默认 help 只展示常用命令；`login-init`、`login-auto`、`cookie-header`、`selftest` 和日志类 debug 命令仍可直接调用，但不在常规帮助中暴露。
+如果要批量维护默认访客账号，可在 ECNU typed env 中设置 `ECNU_VISITOR_PASSWORD1`、`ECNU_VISITOR_PASSWORD2`、`ECNU_VISITOR_REMARK`，然后运行 `chatnet ecnu visitor default`。
 
 完整使用文档见 [`docs/ecnu.md`](docs/ecnu.md)。
 

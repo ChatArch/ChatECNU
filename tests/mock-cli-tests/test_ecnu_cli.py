@@ -10,6 +10,10 @@ class FakePortalClient:
     def __init__(self):
         self.calls = []
         self.state = {"cookies": {"PHPSESSID_8800": "secret-cookie"}, "username": "mock-user"}
+        self.visitor_rows = [
+            {"visitor_id": "10256703", "account": "mock-userm1", "status": "正常", "remark": "GuestA"},
+        ]
+        self.next_id = 10256704
 
     def login_init(self, captcha_path):
         self.calls.append(("login_init", str(captcha_path)))
@@ -49,18 +53,34 @@ class FakePortalClient:
 
     def list_visitors(self):
         self.calls.append(("list_visitors",))
-        return {"count": 1, "rows": [{"visitor_id": "10256703", "account": "mockm1"}]}
+        return {"count": len(self.visitor_rows), "rows": [dict(row) for row in self.visitor_rows]}
 
     def get_visitor(self, visitor_id=None, account=None):
         self.calls.append(("get_visitor", visitor_id, account))
-        return {"visitor_id": visitor_id or "10256703", "account": account or "mockm1"}
+        for row in self.visitor_rows:
+            if visitor_id and row["visitor_id"] == visitor_id:
+                return dict(row)
+            if account and row["account"] == account:
+                return dict(row)
+        return {"visitor_id": visitor_id or "10256703", "account": account or "mock-userm1"}
 
     def create_visitor(self, remark, dry_run=False):
         self.calls.append(("create_visitor", remark, dry_run))
+        account = f"mock-userm{len(self.visitor_rows) + 1}"
+        visitor_id = str(self.next_id)
+        self.next_id += 1
+        if not dry_run:
+            self.visitor_rows.append(
+                {"visitor_id": visitor_id, "account": account, "status": "正常", "remark": remark}
+            )
         return {"dry_run": dry_run, "response": {"account": "mockm1", "password": "Init!234"}}
 
     def update_visitor(self, visitor_id, remark, password, dry_run=False):
         self.calls.append(("update_visitor", visitor_id, remark, password, dry_run))
+        if not dry_run:
+            for row in self.visitor_rows:
+                if row["visitor_id"] == visitor_id:
+                    row["remark"] = remark
         return {"dry_run": dry_run, "response": {"ok": True}}
 
     def delete_visitor(self, visitor_id, dry_run=False):
@@ -100,7 +120,7 @@ def test_ecnu_mock_cli_runs_full_command_chain(monkeypatch, tmp_path):
     assert "Network detail logs" in invoke_ok(runner, ["ecnu", "debug", "detail-log", "--limit", "1"])
     assert "Visitor accounts" in invoke_ok(runner, ["ecnu", "visitor", "list"])
     assert "visitor_id: 10256703" in invoke_ok(runner, ["ecnu", "visitor", "get", "--id", "10256703"])
-    assert "account: mockm1" in invoke_ok(runner, ["ecnu", "visitor", "get", "--account", "mockm1"])
+    assert "account: mock-userm1" in invoke_ok(runner, ["ecnu", "visitor", "get", "--account", "mock-userm1"])
     created = invoke_ok(runner, ["ecnu", "visitor", "create", "--remark", "GuestB", "--dry-run", "-I"])
     assert created == "Create visitor: dry run ready.\n"
     invoke_ok(
@@ -142,6 +162,34 @@ def test_ecnu_mock_cli_runs_full_command_chain(monkeypatch, tmp_path):
         "lock_visitor",
         "logout",
     ]
+
+
+def test_ecnu_visitor_default_uses_env_passwords(monkeypatch, tmp_path):
+    fake = FakePortalClient()
+    monkeypatch.setenv("CHATARCH_HOME", str(tmp_path / "chatarch"))
+    monkeypatch.setattr(ecnu_cli, "make_client", lambda ctx: fake)
+    env_file = tmp_path / "chatarch" / "envs" / "ECNU" / ".env"
+    env_file.parent.mkdir(parents=True)
+    env_file.write_text(
+        "\n".join(
+            [
+                "ECNU_USERNAME='mock-user'",
+                "ECNU_VISITOR_PASSWORD1='Temp!235'",
+                "ECNU_VISITOR_PASSWORD2='Temp!236'",
+                "ECNU_VISITOR_REMARK='default'",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(main, ["ecnu", "visitor", "default", "-I"])
+
+    assert result.exit_code == 0, result.output
+    assert "Default visitor sync complete. Accounts: 2" in result.output
+    assert ("update_visitor", "10256703", "default", "Temp!235", False) in fake.calls
+    assert any(call[:4] == ("update_visitor", "10256704", "default", "Temp!236") for call in fake.calls)
+    assert ("create_visitor", "default", False) in fake.calls
 
 
 def test_ecnu_env_file_override_supplies_login_defaults(monkeypatch, tmp_path):

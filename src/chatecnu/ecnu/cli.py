@@ -12,6 +12,7 @@ from chatstyle import CommandField, CommandSchema, add_interactive_option, resol
 from chatenv.fields import BaseEnvConfig
 from chatenv.paths import get_paths
 
+from chatecnu import __version__
 from chatecnu.config import ECNUConfig
 from .portal import BASE_URL
 
@@ -58,6 +59,7 @@ VISITOR_DEFAULT_SCHEMA = CommandSchema(
 
 
 @click.group(name="chatecnu")
+@click.version_option(__version__, prog_name="chatecnu")
 @click.option(
     "--base-url",
     default=None,

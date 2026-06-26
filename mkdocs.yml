@@ -1,0 +1,10 @@
+site_name: ChatECNU 文档
+site_url: https://ChatArch.github.io/ChatECNU
+repo_url: https://github.com/ChatArch/ChatECNU
+theme:
+  name: material
+  language: zh
+nav:
+  - 首页: index.md
+  - ECNU CLI: ecnu.md
+  - English: index.en.md

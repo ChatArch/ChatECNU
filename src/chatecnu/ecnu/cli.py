@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any, Callable
 
@@ -11,7 +12,7 @@ from chatstyle import CommandField, CommandSchema, add_interactive_option, resol
 from chatenv.fields import BaseEnvConfig
 from chatenv.paths import get_paths
 
-from chatnet.config import ECNUConfig
+from chatecnu.config import ECNUConfig
 from .portal import BASE_URL
 
 LOGIN_SCHEMA = CommandSchema(
@@ -56,7 +57,7 @@ VISITOR_DEFAULT_SCHEMA = CommandSchema(
 )
 
 
-@click.group(name="ecnu")
+@click.group(name="chatecnu")
 @click.option(
     "--base-url",
     default=None,
@@ -67,7 +68,7 @@ VISITOR_DEFAULT_SCHEMA = CommandSchema(
     "--state-file",
     default=None,
     hidden=True,
-    help="Session state JSON file. Defaults to $CHATARCH_HOME/cache/chatnet/ecnu-session.json.",
+    help="Session state JSON file. Defaults to $CHATARCH_HOME/cache/chatecnu-session.json.",
 )
 @click.option(
     "--cookie",
@@ -113,7 +114,7 @@ def selftest() -> None:
     "--captcha-path",
     default=None,
     hidden=True,
-    help="Where to save the captcha image. Defaults to $CHATARCH_HOME/cache/chatnet/ecnu-login-captcha.png.",
+    help="Where to save the captcha image. Defaults to $CHATARCH_HOME/cache/chatecnu-login-captcha.png.",
 )
 @click.pass_context
 def login_init(ctx: click.Context, captcha_path: str | None) -> None:
@@ -132,7 +133,7 @@ def login_init(ctx: click.Context, captcha_path: str | None) -> None:
     "--captcha-path",
     default=None,
     hidden=True,
-    help="Where to save the latest captcha image. Defaults to $CHATARCH_HOME/cache/chatnet/ecnu-login-captcha.png.",
+    help="Where to save the latest captcha image. Defaults to $CHATARCH_HOME/cache/chatecnu-login-captcha.png.",
 )
 @click.option("--rounds", default=3, show_default=True, type=int, hidden=True, help="Captcha refresh rounds.")
 @click.option("--topk", default=5, show_default=True, type=int, hidden=True, help="OCR candidates per captcha.")
@@ -183,7 +184,7 @@ def login(
     "--captcha-path",
     default=None,
     hidden=True,
-    help="Where to save the latest captcha image. Defaults to $CHATARCH_HOME/cache/chatnet/ecnu-login-captcha.png.",
+    help="Where to save the latest captcha image. Defaults to $CHATARCH_HOME/cache/chatecnu-login-captcha.png.",
 )
 @click.option("--rounds", default=3, show_default=True, type=int, hidden=True, help="Captcha refresh rounds.")
 @click.option("--topk", default=5, show_default=True, type=int, hidden=True, help="OCR candidates per captcha.")
@@ -400,7 +401,7 @@ def visitor_create(
         schema=VISITOR_CREATE_SCHEMA,
         provided={"remark": remark},
         interactive=interactive,
-        usage="Usage: chatnet ecnu visitor create --remark TEXT [-i|-I]",
+        usage="Usage: chatecnu visitor create --remark TEXT [-i|-I]",
     )
     emit_mutation_result(
         call_client(ctx, lambda client: client.create_visitor(values["remark"], dry_run=dry_run)),
@@ -468,7 +469,7 @@ def visitor_update(
         schema=VISITOR_UPDATE_SCHEMA,
         provided={"visitor_id": visitor_id, "remark": remark, "password": password},
         interactive=interactive,
-        usage="Usage: chatnet ecnu visitor update --id ID --remark TEXT --password TEXT [-i|-I]",
+        usage="Usage: chatecnu visitor update --id ID --remark TEXT --password TEXT [-i|-I]",
     )
     emit_mutation_result(
         call_client(
@@ -504,7 +505,7 @@ def visitor_delete(
         schema=VISITOR_ID_SCHEMA,
         provided={"visitor_id": visitor_id},
         interactive=interactive,
-        usage="Usage: chatnet ecnu visitor delete --id ID [-i|-I]",
+        usage="Usage: chatecnu visitor delete --id ID [-i|-I]",
     )
     emit_mutation_result(
         call_client(ctx, lambda client: client.delete_visitor(values["visitor_id"], dry_run=dry_run)),
@@ -532,7 +533,7 @@ def visitor_lock(
         schema=VISITOR_ID_SCHEMA,
         provided={"visitor_id": visitor_id},
         interactive=interactive,
-        usage="Usage: chatnet ecnu visitor lock --id ID [-i|-I]",
+        usage="Usage: chatecnu visitor lock --id ID [-i|-I]",
     )
     emit_mutation_result(
         call_client(ctx, lambda client: client.lock_visitor(values["visitor_id"], dry_run=dry_run)),
@@ -562,6 +563,31 @@ def call_client(ctx: click.Context, func: Callable[[Any], Any]) -> Any:
 
 def echo_json(data: Any) -> None:
     click.echo(json.dumps(data, ensure_ascii=False, indent=2))
+
+
+SENSITIVE_KEY_RE = re.compile(r"(password|passwd|token|csrf|cookie|secret)", re.I)
+
+
+def redact_sensitive(value: Any) -> Any:
+    if isinstance(value, dict):
+        result: dict[Any, Any] = {}
+        for key, item in value.items():
+            key_text = str(key)
+            if re.fullmatch(r"cookies?", key_text, flags=re.I) and isinstance(item, dict):
+                result[key] = {cookie_key: "***" for cookie_key in item}
+            elif SENSITIVE_KEY_RE.search(key_text):
+                result[key] = "***"
+            else:
+                result[key] = redact_sensitive(item)
+        return result
+    if isinstance(value, list):
+        return [redact_sensitive(item) for item in value]
+    if isinstance(value, str):
+        redacted = re.sub(r"(password=)[^&\s']+", r"\1***", value, flags=re.I)
+        redacted = re.sub(r"(token=)[^&\s']+", r"\1***", redacted, flags=re.I)
+        redacted = re.sub(r"(csrf[^=&\s']*=)[^&\s']+", r"\1***", redacted, flags=re.I)
+        return redacted
+    return value
 
 
 def emit_login_result(result: dict[str, Any], *, json_output: bool) -> None:
@@ -621,7 +647,7 @@ def emit_visitor_list_result(result: dict[str, Any], *, json_output: bool) -> No
 
 def emit_mutation_result(result: dict[str, Any], *, json_output: bool, action: str) -> None:
     if json_output:
-        echo_json(result)
+        echo_json(redact_sensitive(result))
         return
     click.echo(format_mutation_summary(result, action=action))
 
@@ -757,10 +783,7 @@ def format_mutation_summary(result: dict[str, Any], *, action: str) -> str:
         return f"{action}: dry run ready."
     response = result.get("response") or {}
     if isinstance(response, dict) and "password" in response and "account" in response:
-        lines = [f"{action}: success.", f"Account: {response['account']}"]
-        if response.get("password"):
-            lines.append(f"Initial password: {response['password']}")
-        return "\n".join(lines)
+        return "\n".join([f"{action}: success.", f"Account: {response['account']}", "Initial password: ***"])
     if isinstance(response, dict) and response.get("ok"):
         return f"{action}: success."
     return f"{action}: completed."
@@ -800,10 +823,10 @@ def resolve_login_inputs(
         "username": username or ECNUConfig.ECNU_USERNAME.value,
         "password": password or ECNUConfig.ECNU_PASSWORD.value,
     }
-    usage = f"Usage: chatnet ecnu {command_name} --username TEXT --password TEXT [-i|-I]"
+    usage = f"Usage: chatecnu {command_name} --username TEXT --password TEXT [-i|-I]"
     if include_captcha:
         provided["captcha"] = captcha
-        usage = "Usage: chatnet ecnu login --username TEXT --password TEXT --captcha TEXT [-i|-I]"
+        usage = "Usage: chatecnu login --username TEXT --password TEXT --captcha TEXT [-i|-I]"
     return resolve_command_inputs(schema=schema, provided=provided, interactive=interactive, usage=usage)
 
 
@@ -818,7 +841,7 @@ def resolve_default_visitor_inputs(
         schema=VISITOR_DEFAULT_SCHEMA,
         provided={"password1": password1 or ECNUConfig.ECNU_VISITOR_PASSWORD1.value},
         interactive=interactive,
-        usage="Usage: chatnet ecnu visitor default --password1 TEXT [--password2 TEXT] [--remark TEXT] [-i|-I]",
+        usage="Usage: chatecnu visitor default --password1 TEXT [--password2 TEXT] [--remark TEXT] [-i|-I]",
     )
     resolved_password1 = values["password1"]
     resolved_password2 = password2 or ECNUConfig.ECNU_VISITOR_PASSWORD2.value
@@ -830,7 +853,7 @@ def resolve_default_visitor_inputs(
         raise click.UsageError("Password2 requires password1 so the default visitor order remains deterministic.")
     username_prefix = ECNUConfig.ECNU_USERNAME.value
     if not username_prefix:
-        raise click.UsageError("ECNU_USERNAME must be set before running `chatnet ecnu visitor default`.")
+        raise click.UsageError("ECNU_USERNAME must be set before running `chatecnu visitor default`.")
     return {
         "username_prefix": username_prefix,
         "password1": resolved_password1,
@@ -905,15 +928,15 @@ def load_chatenv(env_profile: str | None = None, env_file: str | None = None) ->
 
 
 def default_state_file() -> Path:
-    return get_paths().home_dir / "cache" / "chatnet" / "ecnu-session.json"
+    return get_paths().home_dir / "cache" / "chatecnu" / "ecnu-session.json"
 
 
 def default_captcha_path() -> Path:
-    return get_paths().home_dir / "cache" / "chatnet" / "ecnu-login-captcha.png"
+    return get_paths().home_dir / "cache" / "chatecnu" / "ecnu-login-captcha.png"
 
 
 def redact_state(state: dict[str, Any]) -> dict[str, Any]:
-    redacted = dict(state)
+    redacted = redact_sensitive(dict(state))
     cookies = redacted.get("cookies")
     if isinstance(cookies, dict):
         redacted["cookies"] = {key: "***" for key in cookies}

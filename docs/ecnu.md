@@ -1,6 +1,6 @@
-# ChatNet ECNU 使用文档
+# ChatECNU ECNU 使用文档
 
-`chatnet ecnu` 用于脚本化访问 ECNU 自助服务平台，覆盖登录、会话、首页与日志查询，以及访客账号管理。
+`chatecnu` 用于脚本化访问 ECNU 自助服务平台，覆盖登录、会话、首页与日志查询，以及访客账号管理。
 
 ## 1. 安装
 
@@ -19,8 +19,8 @@ pip install -e ".[captcha]"
 安装后先确认 CLI 可用：
 
 ```bash
-chatnet --help
-chatnet ecnu --help
+chatecnu --help
+chatecnu --help
 ```
 
 默认帮助只展示日常使用命令。`selftest` 等诊断命令仍可直接调用，但不会出现在常规帮助中。
@@ -64,13 +64,13 @@ chatenv test -t ecnu
 ```bash
 chatenv save work -t ecnu
 chatenv use work -t ecnu
-chatnet ecnu -e work status
+chatecnu -e work status
 ```
 
 也可以用临时 env 文件覆盖：
 
 ```bash
-chatnet ecnu --env-file ./ecnu.env status
+chatecnu --env-file ./ecnu.env status
 ```
 
 ## 3. 默认文件位置
@@ -78,19 +78,19 @@ chatnet ecnu --env-file ./ecnu.env status
 默认会话文件：
 
 ```text
-~/.chatarch/cache/chatnet/ecnu-session.json
+~/.chatarch/cache/chatecnu/ecnu-session.json
 ```
 
 默认验证码图片：
 
 ```text
-~/.chatarch/cache/chatnet/ecnu-login-captcha.png
+~/.chatarch/cache/chatecnu/ecnu-login-captcha.png
 ```
 
 如需隔离会话，可显式指定：
 
 ```bash
-chatnet ecnu --state-file ./ecnu-session.json status
+chatecnu --state-file ./ecnu-session.json status
 ```
 
 ## 4. 登录
@@ -100,7 +100,7 @@ chatnet ecnu --state-file ./ecnu-session.json status
 推荐使用：
 
 ```bash
-chatnet ecnu login --rounds 3 --topk 5 -I
+chatecnu login --rounds 3 --topk 5 -I
 ```
 
 默认逻辑：
@@ -112,7 +112,7 @@ chatnet ecnu login --rounds 3 --topk 5 -I
 - 默认输出人类可读摘要；如果要原始结构，显式加 `--json`。
 
 ```bash
-chatnet ecnu login --sms-code 123456 --rounds 3 --topk 5 -I
+chatecnu login --sms-code 123456 --rounds 3 --topk 5 -I
 ```
 
 ### 手动验证码登录（高级）
@@ -120,31 +120,31 @@ chatnet ecnu login --sms-code 123456 --rounds 3 --topk 5 -I
 自动 OCR 不可用时，可以直接调用隐藏的 `login-init` 诊断命令下载验证码：
 
 ```bash
-chatnet ecnu login-init
+chatecnu login-init
 ```
 
 查看默认验证码图片后提交：
 
 ```bash
-chatnet ecnu login --captcha ABCD -I
+chatecnu login --captcha ABCD -I
 ```
 
 如果不使用 chatenv，也可以显式传参：
 
 ```bash
-chatnet ecnu login --username "your-ecnu-username" --password "your-password" --captcha ABCD -I
+chatecnu login --username "your-ecnu-username" --password "your-password" --captcha ABCD -I
 ```
 
 ### 查看会话
 
 ```bash
-chatnet ecnu status
+chatecnu status
 ```
 
 `status` 默认输出摘要。需要原始结构时使用 `--json`。需要本地调试时，仍可直接调用隐藏的 `cookie-header` 命令导出 Cookie header：
 
 ```bash
-chatnet ecnu cookie-header
+chatecnu cookie-header
 ```
 
 `cookie-header` 会输出敏感会话信息，只用于本地调试。
@@ -152,7 +152,7 @@ chatnet ecnu cookie-header
 退出登录：
 
 ```bash
-chatnet ecnu logout
+chatecnu logout
 ```
 
 ## 5. 查询
@@ -160,22 +160,22 @@ chatnet ecnu logout
 首页摘要：
 
 ```bash
-chatnet ecnu home
+chatecnu home
 ```
 
 用户信息：
 
 ```bash
-chatnet ecnu user-info
+chatecnu user-info
 ```
 
 认证日志和上网明细已经下沉到隐藏的 debug 路径，不在常规 help 中展示：
 
 ```bash
-chatnet ecnu debug auth-log --limit 10
-chatnet ecnu debug auth-log --start "2026-06-01 00:00:00" --end "2026-06-15 23:59:59" --limit 10
-chatnet ecnu debug detail-log --limit 10
-chatnet ecnu debug detail-log --start "2026-06-01 00:00:00" --end "2026-06-15 23:59:59" --limit 10
+chatecnu debug auth-log --limit 10
+chatecnu debug auth-log --start "2026-06-01 00:00:00" --end "2026-06-15 23:59:59" --limit 10
+chatecnu debug detail-log --limit 10
+chatecnu debug detail-log --start "2026-06-01 00:00:00" --end "2026-06-15 23:59:59" --limit 10
 ```
 
 ## 6. 访客管理
@@ -183,9 +183,9 @@ chatnet ecnu debug detail-log --start "2026-06-01 00:00:00" --end "2026-06-15 23
 ### 列表与查询
 
 ```bash
-chatnet ecnu visitor list
-chatnet ecnu visitor get --id 10256703
-chatnet ecnu visitor get --account 20260000000m2
+chatecnu visitor list
+chatecnu visitor get --id 10256703
+chatecnu visitor get --account 20260000000m2
 ```
 
 ### 创建访客
@@ -193,7 +193,7 @@ chatnet ecnu visitor get --account 20260000000m2
 访客创建是账号签发步骤，服务端会生成访客账号和初始密码：
 
 ```bash
-chatnet ecnu visitor create --remark GuestA -I
+chatecnu visitor create --remark GuestA -I
 ```
 
 备注约束来自页面校验：2-14 位中文或英文字符。
@@ -211,7 +211,7 @@ ECNU_VISITOR_REMARK='default'
 然后运行：
 
 ```bash
-chatnet ecnu visitor default -I
+chatecnu visitor default -I
 ```
 
 行为规则：
@@ -222,7 +222,7 @@ chatnet ecnu visitor default -I
 - 也可以用参数覆盖：
 
 ```bash
-chatnet ecnu visitor default --password1 'Temp!235' --password2 'Temp!236' --remark default -I
+chatecnu visitor default --password1 'Temp!235' --password2 'Temp!236' --remark default -I
 ```
 
 ### 编辑访客密码
@@ -230,7 +230,7 @@ chatnet ecnu visitor default --password1 'Temp!235' --password2 'Temp!236' --rem
 如果要设置最终密码，需要对创建后的访客 `id` 执行编辑：
 
 ```bash
-chatnet ecnu visitor update --id 10256703 --remark GuestA --password 'Temp!235' -I
+chatecnu visitor update --id 10256703 --remark GuestA --password 'Temp!235' -I
 ```
 
 密码约束：
@@ -241,25 +241,25 @@ chatnet ecnu visitor update --id 10256703 --remark GuestA --password 'Temp!235' 
 标准验收流程是：
 
 ```bash
-chatnet ecnu login --rounds 3 --topk 5 -I
-chatnet ecnu visitor create --remark GuestA -I
-chatnet ecnu visitor list
-chatnet ecnu visitor update --id <created-id> --remark GuestA --password '<final-password>' -I
-chatnet ecnu visitor list
+chatecnu login --rounds 3 --topk 5 -I
+chatecnu visitor create --remark GuestA -I
+chatecnu visitor list
+chatecnu visitor update --id <created-id> --remark GuestA --password '<final-password>' -I
+chatecnu visitor list
 ```
 
 ### 删除
 
 ```bash
-chatnet ecnu visitor delete --id 10256703 -I
+chatecnu visitor delete --id 10256703 -I
 ```
 
 修改类命令支持 `--dry-run`：
 
 ```bash
-chatnet ecnu visitor create --remark GuestA --dry-run -I
-chatnet ecnu visitor update --id 10256703 --remark GuestA --password 'Temp!235' --dry-run -I
-chatnet ecnu visitor delete --id 10256703 --dry-run -I
+chatecnu visitor create --remark GuestA --dry-run -I
+chatecnu visitor update --id 10256703 --remark GuestA --password 'Temp!235' --dry-run -I
+chatecnu visitor delete --id 10256703 --dry-run -I
 ```
 
 `visitor lock` 属于低频管理动作，仍可直接调用，但默认不在 `visitor --help` 中展示。
@@ -290,7 +290,7 @@ pip install -e ".[captcha]"
 通常表示会话失效，重新登录：
 
 ```bash
-chatnet ecnu login --rounds 3 --topk 5 -I
+chatecnu login --rounds 3 --topk 5 -I
 ```
 
 ### 服务端要求短信验证码
@@ -298,7 +298,7 @@ chatnet ecnu login --rounds 3 --topk 5 -I
 补充 `--sms-code`：
 
 ```bash
-chatnet ecnu login --sms-code 123456 -I
+chatecnu login --sms-code 123456 -I
 ```
 
 ### 访客创建没有新增记录
@@ -306,14 +306,14 @@ chatnet ecnu login --sms-code 123456 -I
 先查看当前数量：
 
 ```bash
-chatnet ecnu visitor list
+chatecnu visitor list
 ```
 
 如果平台限制访客数量，需要删除旧访客后再创建：
 
 ```bash
-chatnet ecnu visitor delete --id <old-id> -I
-chatnet ecnu visitor create --remark GuestA -I
+chatecnu visitor delete --id <old-id> -I
+chatecnu visitor create --remark GuestA -I
 ```
 
 ### 查看请求规格但不提交
@@ -321,7 +321,7 @@ chatnet ecnu visitor create --remark GuestA -I
 使用 `--dry-run`：
 
 ```bash
-chatnet ecnu visitor create --remark GuestA --dry-run -I
+chatecnu visitor create --remark GuestA --dry-run -I
 ```
 
 ## 9. 安全注意事项

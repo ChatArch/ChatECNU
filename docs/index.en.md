@@ -1,6 +1,6 @@
-# ChatNet Docs
+# ChatECNU Docs
 
-Long-lived documentation for `ChatNet` lives here.
+Long-lived documentation for `ChatECNU` lives here.
 
 ## Local Preview
 

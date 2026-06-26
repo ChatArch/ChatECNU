@@ -1,4 +1,4 @@
-"""ChatEnv configuration schemas provided by ChatNet."""
+"""ChatEnv configuration schemas provided by ChatECNU."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ class ECNUConfig(BaseEnvConfig):
     """ECNU self-service portal environment variables."""
 
     _title = "ECNU"
-    _aliases = ["ecnu", "chatnet-ecnu"]
+    _aliases = ["ecnu", "chatecnu-ecnu"]
     _storage_dir = "ECNU"
 
     ECNU_USERNAME = EnvField("ECNU_USERNAME", desc="ECNU username.")
@@ -18,7 +18,7 @@ class ECNUConfig(BaseEnvConfig):
     ECNU_BASE_URL = EnvField("ECNU_BASE_URL", default="https://login.ecnu.edu.cn:8800", desc="ECNU portal base URL.")
     ECNU_VISITOR_PASSWORD1 = EnvField("ECNU_VISITOR_PASSWORD1", desc="Default password for visitor account suffix m1.", is_sensitive=True)
     ECNU_VISITOR_PASSWORD2 = EnvField("ECNU_VISITOR_PASSWORD2", desc="Default password for visitor account suffix m2.", is_sensitive=True)
-    ECNU_VISITOR_REMARK = EnvField("ECNU_VISITOR_REMARK", default="default", desc="Default remark used by `chatnet ecnu visitor default`.")
+    ECNU_VISITOR_REMARK = EnvField("ECNU_VISITOR_REMARK", default="default", desc="Default remark used by `chatecnu visitor default`.")
 
     @classmethod
     def test(cls) -> None:

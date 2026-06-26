@@ -4,22 +4,22 @@
 
 ### Changed
 
-- Prepare `0.1.2` release in the feature PR so the post-merge tag can publish a continuous next-patch version.
-- Remove the unused top-level `chatnet hello` template command so the CLI only exposes real product functionality.
+- Prepare `0.1.0` release in the feature PR so the post-merge tag can publish a continuous next-patch version.
+- Remove the unused top-level `chatecnu hello` template command so the CLI only exposes real product functionality.
 - Add a non-network `ECNUConfig.test()` implementation so `chatenv test -t ecnu` validates the installed provider without raising `NotImplementedError`.
-- Trim the default `chatnet ecnu --help` surface by hiding advanced/sensitive diagnostics such as `login-init`, `cookie-header`, `selftest`, low-level state/cookie options, and `visitor lock`.
-- Add `chatnet ecnu status` as the user-facing redacted session/status command while keeping `session-info` as a hidden compatibility alias.
-- Make `chatnet ecnu login` the primary OCR-backed login entrypoint, keep `login-auto` as a hidden compatibility alias, and move log queries under hidden `debug` commands.
+- Trim the default `chatecnu --help` surface by hiding advanced/sensitive diagnostics such as `login-init`, `cookie-header`, `selftest`, low-level state/cookie options, and `visitor lock`.
+- Add `chatecnu status` as the user-facing redacted session/status command while keeping `session-info` as a hidden compatibility alias.
+- Make `chatecnu login` the primary OCR-backed login entrypoint, keep `login-auto` as a hidden compatibility alias, and move log queries under hidden `debug` commands.
 - Switch user-facing ECNU commands to human-readable summaries by default with opt-in `--json` output.
-- Add `chatnet ecnu visitor default` plus `ECNU_VISITOR_PASSWORD1`, `ECNU_VISITOR_PASSWORD2`, and `ECNU_VISITOR_REMARK` for deterministic default visitor provisioning.
+- Add `chatecnu visitor default` plus `ECNU_VISITOR_PASSWORD1`, `ECNU_VISITOR_PASSWORD2`, and `ECNU_VISITOR_REMARK` for deterministic default visitor provisioning.
 - Refactor ECNU login input resolution so manual and auto login share the same credential handling path.
 
 ## 2026-06-15
 
 ### Added
 
-- Add `chatnet ecnu` commands for ECNU portal login, session inspection, log queries, and visitor account management.
-- Add optional `captcha` extra for OCR-backed `chatnet ecnu login-auto`.
+- Add `chatecnu` commands for ECNU portal login, session inspection, log queries, and visitor account management.
+- Add optional `captcha` extra for OCR-backed `chatecnu login-auto`.
 - Add ECNU CLI documentation and a local selftest command.
 - Add ChatEnv provider metadata and `ECNUConfig` for `~/.chatarch/envs/ECNU/.env`.
 
@@ -29,6 +29,6 @@
 
 - 发布 workflow 改为显式 `v*` tag / `workflow_dispatch` 触发，使用 PyPI Trusted Publishing（`id-token: write` + `environment: pypi`），不再依赖仓库级 PyPI token secret。
 
-- Load ECNU CLI defaults from chatenv and move default ECNU session/cache paths under `~/.chatarch/cache/chatnet/`.
+- Load ECNU CLI defaults from chatenv and move default ECNU session/cache paths under `~/.chatarch/cache/chatecnu/`.
 
 ### Fixed

@@ -29,7 +29,7 @@ jobs:
           import os
           from pathlib import Path
 
-          module = ast.parse(Path("src/chatnet/__init__.py").read_text(encoding="utf-8"))
+          module = ast.parse(Path("src/chatecnu/__init__.py").read_text(encoding="utf-8"))
           for stmt in module.body:
               if not isinstance(stmt, ast.Assign):
                   continue
@@ -37,7 +37,7 @@ jobs:
                   version = ast.literal_eval(stmt.value)
                   break
           else:
-              raise SystemExit("__version__ not found in src/chatnet/__init__.py")
+              raise SystemExit("__version__ not found in src/chatecnu/__init__.py")
 
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
               print(f"version={version}", file=output)
@@ -55,7 +55,7 @@ jobs:
       - name: Check PyPI version
         id: pypi
         env:
-          PACKAGE_NAME: "ChatNet"
+          PACKAGE_NAME: "ChatECNU"
           PACKAGE_VERSION: ${{ steps.meta.outputs.version }}
         run: |
           python - <<'PY'
@@ -81,7 +81,7 @@ jobs:
           PY
       - name: Stop when version is already on PyPI
         if: steps.pypi.outputs.exists == 'true'
-        run: echo "ChatNet ${{ steps.meta.outputs.version }} is already on PyPI; skipping publish."
+        run: echo "ChatECNU ${{ steps.meta.outputs.version }} is already on PyPI; skipping publish."
       - name: Build distribution
         if: steps.pypi.outputs.exists == 'false'
         run: |

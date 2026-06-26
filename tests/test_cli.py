@@ -1,19 +1,20 @@
 from click.testing import CliRunner
 
-from chatnet.config import ECNUConfig
-from chatnet.cli import main
-from chatnet.ecnu.cli import load_chatenv
+from chatecnu.config import ECNUConfig
+from chatecnu.cli import main
+from chatecnu.ecnu.cli import load_chatenv, redact_state
 
 
-def test_help_lists_ecnu_group():
+def test_help_lists_ecnu_commands():
     result = CliRunner().invoke(main, ["--help"])
 
     assert result.exit_code == 0
-    assert "ecnu" in result.output
+    assert "status" in result.output
+    assert "visitor" in result.output
 
 
-def test_ecnu_selftest_runs_without_network():
-    result = CliRunner().invoke(main, ["ecnu", "selftest"])
+def test_selftest_runs_without_network():
+    result = CliRunner().invoke(main, ["selftest"])
 
     assert result.exit_code == 0
     assert '"ok": true' in result.output
@@ -41,3 +42,16 @@ def test_ecnu_config_test_does_not_raise(capsys):
     output = capsys.readouterr().out
     assert "Testing ECNU" in output
     assert "Config loaded" in output
+
+
+def test_redact_state_masks_cookies_and_login_bootstrap_secrets():
+    redacted = redact_state(
+        {
+            "cookies": {"PHPSESSID_8800": "secret-cookie"},
+            "login_bootstrap": {"csrf_token": "secret-token", "csrf_param": "_csrf"},
+        }
+    )
+
+    assert redacted["cookies"] == {"PHPSESSID_8800": "***"}
+    assert redacted["login_bootstrap"]["csrf_token"] == "***"
+    assert redacted["login_bootstrap"]["csrf_param"] == "***"

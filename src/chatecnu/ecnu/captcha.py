@@ -14,7 +14,7 @@ def _load_ocr_deps() -> tuple[Any, Any, Any]:
         from PIL import Image
     except ImportError as exc:
         raise RuntimeError(
-            'CAPTCHA auto-login requires optional dependencies. Install them with: pip install "ChatNet[captcha]"'
+            'CAPTCHA auto-login requires optional dependencies. Install them with: pip install "ChatECNU[captcha]"'
         ) from exc
     return ddddocr, np, Image
 

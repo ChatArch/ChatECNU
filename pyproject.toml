@@ -3,36 +3,38 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ChatNet"
+name = "ChatECNU"
 dynamic = ["version"]
-description = "ChatArch network and campus-network CLI"
+description = "ChatArch ECNU campus portal automation CLI"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 dependencies = [
     "click>=8.0",
-    "chatstyle>=0.1.0",
-    "chatenv>=0.1.1",
+    "chatstyle>=0.1.0,<0.2.0",
+    "chatenv>=0.2.0,<0.3.0",
+    "ChatNet>=0.2.0,<0.3.0",
     "requests>=2.0",
     "pycryptodome>=3.0",
 ]
 authors = [{name = "ChatArch", email = "1073853456@qq.com"}]
-keywords = ["chatnet", "chatarch", "cli"]
+keywords = ["chatecnu", "chatarch", "ecnu", "campus", "portal"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
 
 [project.scripts]
-chatnet = "chatnet.cli:main"
+chatecnu = "chatecnu.cli:main"
 
 [project.entry-points."chatenv.configs"]
-chatnet = "chatnet.config"
+ecnu = "chatecnu.config"
+chatecnu = "chatecnu.config"
 
 [project.urls]
-Homepage = "https://github.com/ChatArch/ChatNet"
-Repository = "https://github.com/ChatArch/ChatNet"
-Documentation = "https://ChatArch.github.io/ChatNet"
+Homepage = "https://github.com/ChatArch/ChatECNU"
+Repository = "https://github.com/ChatArch/ChatECNU"
+Documentation = "https://ChatArch.github.io/ChatECNU"
 
 [project.optional-dependencies]
 captcha = ["ddddocr", "numpy", "pillow"]
@@ -40,7 +42,7 @@ dev = ["build", "pytest", "twine"]
 docs = ["mkdocs>=1.4.0", "mkdocs-material>=9.0.0", "mike>=2.0.0"]
 
 [tool.setuptools.dynamic]
-version = {attr = "chatnet.__version__"}
+version = {attr = "chatecnu.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -34,7 +34,7 @@ ecnu net
 └── ensure-login  # 离线时再登录
 ```
 
-`net` 管理本机校园网出口认证。它包装外部 `auth_client`，不打包该二进制。
+`net` 管理本机校园网出口认证。它默认使用 PyPI 包内置的 Linux x86_64 `auth_client`，也可通过 `--auth-client` / `ECNU_AUTH_CLIENT` 覆盖。
 
 ## visitor {#visitor}
 

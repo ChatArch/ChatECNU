@@ -26,7 +26,6 @@ chatenv new default -t ecnu -I --yes
 ```text
 ECNU_USERNAME=你的学号或账号
 ECNU_PASSWORD=你的密码
-ECNU_AUTH_CLIENT=/usr/local/bin/auth_client
 ```
 
 完整变量见 [ChatEnv 变量](chatenv.md)。
@@ -43,8 +42,8 @@ ecnu home user
 ## 校园网最小验证
 
 ```bash
-ecnu net check --auth-client /usr/local/bin/auth_client --json
-ecnu net ensure-login --auth-client /usr/local/bin/auth_client -I
+ecnu net check --json
+ecnu net ensure-login -I --allow-argv-password
 ```
 
 `check` 不需要密码。`login` / `ensure-login` 默认不把密码放入外部进程参数；只有明确接受本机进程列表暴露风险后才使用 `--allow-argv-password`。

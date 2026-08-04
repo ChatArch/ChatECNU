@@ -54,3 +54,6 @@ where = ["src"]
 
 [tool.setuptools]
 include-package-data = true
+
+[tool.setuptools.package-data]
+chatecnu = ["bin/linux-x86_64/auth_client"]

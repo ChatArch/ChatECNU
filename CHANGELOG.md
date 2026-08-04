@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1
+
+### Fixed
+
+- 内置 Linux x86_64 `auth_client` 到 PyPI wheel/sdist，默认 `ecnu net ...` 不再依赖内网下载或机器预装 PATH。
+- `ecnu net check` 现在解析 `auth_client check` 的 stdout/stderr，JSON 和 human 输出都会显示 `online`、`account`、`username`。
+- `ecnu net logout` 未提供用户名时会先执行 `auth_client check` 并从 `Username=...` 提取当前登录账号，再执行退出，和 `/nas/resources/ecnu_login.sh` 的 `mylogout` 逻辑一致。
+
 ## 0.2.0
 
 ### Changed

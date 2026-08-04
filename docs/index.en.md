@@ -16,7 +16,7 @@ ChatECNU provides Python APIs and command-line tools for ECNU portal access and 
 
     ---
 
-    Wrap an external `auth_client` to check, login, logout, or ensure local network access.
+    Use the PyPI-bundled Linux x86_64 `auth_client` to check, login, logout, or ensure local network access.
 
     [`ecnu net ...`](cli-tree.md#net)
 

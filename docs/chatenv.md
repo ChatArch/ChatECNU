@@ -19,7 +19,7 @@ chatenv new default -t ecnu -I --yes
 | `ECNU_PASSWORD` | 门户和校园网共用密码 | 是 |
 | `ECNU_COOKIE` | 已有门户 Cookie | 是 |
 | `ECNU_BASE_URL` | 门户基地址 | 否 |
-| `ECNU_AUTH_CLIENT` | 本机 `auth_client` 路径 | 否 |
+| `ECNU_AUTH_CLIENT` | 可选 auth_client 覆盖路径；默认使用 PyPI 内置二进制 | 否 |
 | `ECNU_AUTH_SETTING_FILE` | 可选设置文件 | 否 |
 | `ECNU_VISITOR_PASSWORD1` | 默认访客账号一密码 | 是 |
 | `ECNU_VISITOR_PASSWORD2` | 默认访客账号二密码 | 是 |

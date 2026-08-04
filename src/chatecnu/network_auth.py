@@ -1,17 +1,24 @@
 """ECNU campus-network ``auth_client`` wrapper.
 
-This module intentionally wraps an external ``auth_client`` executable instead
-of vendoring the binary. The upstream ECNU scripts shell out to a Linux-only
-client distributed outside ChatECNU. That binary appears to accept passwords
-only through ``-p`` argv, so ChatECNU fails closed by default and requires an
-explicit unsafe opt-in before using that legacy argv-password channel.
+The upstream ECNU helper scripts shell out to a Linux-only ``auth_client``:
+``checklogin`` runs ``auth_client check`` and ``mylogout`` extracts
+``Username=...`` from that check before calling ``auth_client -u USER auth
+--logout``. ChatECNU keeps that command contract but ships the Linux x86_64
+client inside the PyPI wheel so pip installs do not depend on internal network
+URLs. The binary appears to accept passwords only through ``-p`` argv, so
+ChatECNU still fails closed by default and requires explicit unsafe opt-in
+before using that legacy argv-password channel.
 """
 
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from importlib.resources import files as resource_files
 from pathlib import Path
+import platform
+import re
 import shlex
+import shutil
 import subprocess
 from typing import Callable, Protocol, Sequence
 
@@ -26,7 +33,19 @@ AUTH_CLIENT_ERROR_MARKERS = (
 )
 ARGV_PASSWORD_DISABLED_RETURNCODE = 126
 ARGV_PASSWORD_DISABLED_MESSAGE = "默认拒绝通过 auth_client argv 传密码；接受本机进程列表暴露风险后再使用 --allow-argv-password。"
+IMPLICIT_AUTH_CLIENT_NAMES = {"", "auth_client"}
+ACCOUNT_RE = re.compile(r"\bAccount\s+(?P<account>\S+)\s+is\s+online\b", re.I)
+USERNAME_RE = re.compile(r"\bUsername=(?P<username>\S+)")
+ONLINE_FIELD_RE = re.compile(r"\bOnline=(?P<online>true|false)\b", re.I)
 
+
+@dataclass(frozen=True)
+class NetworkAuthCheckInfo:
+    """Parsed login state reported by ``auth_client check``."""
+
+    online: bool
+    account: str | None = None
+    username: str | None = None
 
 class CompletedProcessLike(Protocol):
     """Minimal subprocess result protocol used for dependency injection."""
@@ -75,6 +94,8 @@ class NetworkAuthResult:
     stderr: str
     redacted_command: str
     online: bool | None = None
+    account: str | None = None
+    username: str | None = None
     skipped: bool = False
 
     def to_dict(self) -> dict[str, object]:
@@ -127,7 +148,40 @@ class NetworkAuthClient:
         completed = self._run(argv)
         stdout = completed.stdout or ""
         success = completed.returncode == 0 and "Logout success" in stdout
-        return self._result("logout", argv, completed, success=success)
+        return self._result("logout", argv, completed, success=success, username=username)
+
+    def logout_current(self) -> NetworkAuthResult:
+        """Match ``mylogout``: check current session, extract Username, then logout."""
+
+        check_result = self.check()
+        username = check_result.username or check_result.account
+        if check_result.success and check_result.online is False:
+            return NetworkAuthResult(
+                action="logout",
+                success=True,
+                returncode=check_result.returncode,
+                stdout=check_result.stdout,
+                stderr=check_result.stderr,
+                redacted_command=check_result.redacted_command,
+                online=False,
+                account=check_result.account,
+                username=check_result.username,
+                skipped=True,
+            )
+        if not check_result.success or not username:
+            return NetworkAuthResult(
+                action="logout",
+                success=False,
+                returncode=check_result.returncode,
+                stdout=check_result.stdout,
+                stderr=check_result.stderr or "auth_client check did not report Username for logout.",
+                redacted_command=check_result.redacted_command,
+                online=check_result.online,
+                account=check_result.account,
+                username=check_result.username,
+                skipped=False,
+            )
+        return self.logout(username)
 
     def check(self) -> NetworkAuthResult:
         """Run ``auth_client check`` and parse whether someone is online."""
@@ -139,9 +193,17 @@ class NetworkAuthClient:
         completed = self._run(argv)
         stdout = completed.stdout or ""
         stderr = completed.stderr or ""
-        online = is_online_output(stdout)
+        info = parse_check_login_info(stdout, stderr)
         success = completed.returncode == 0 and not has_auth_client_error(stdout, stderr)
-        return self._result("check", argv, completed, success=success, online=online)
+        return self._result(
+            "check",
+            argv,
+            completed,
+            success=success,
+            online=info.online,
+            account=info.account,
+            username=info.username,
+        )
 
     def ensure_login(self, credentials: NetworkAuthCredentials) -> NetworkAuthResult:
         """Login only when ``auth_client check`` says the network session is offline."""
@@ -156,6 +218,8 @@ class NetworkAuthClient:
                 stderr=check_result.stderr,
                 redacted_command=check_result.redacted_command,
                 online=True,
+                account=check_result.account,
+                username=check_result.username,
                 skipped=True,
             )
         if not check_result.success:
@@ -167,6 +231,8 @@ class NetworkAuthClient:
                 stderr=check_result.stderr,
                 redacted_command=check_result.redacted_command,
                 online=check_result.online,
+                account=check_result.account,
+                username=check_result.username,
                 skipped=False,
             )
         login_result = self.login(credentials)
@@ -234,6 +300,8 @@ class NetworkAuthClient:
         *,
         success: bool,
         online: bool | None = None,
+        account: str | None = None,
+        username: str | None = None,
         secret_values: Sequence[str] = (),
     ) -> NetworkAuthResult:
         return NetworkAuthResult(
@@ -244,7 +312,56 @@ class NetworkAuthClient:
             stderr=redact_text(completed.stderr or "", secret_values),
             redacted_command=redact_command(argv),
             online=online,
+            account=account,
+            username=username,
         )
+
+
+def resolve_auth_client_path(configured: str | Path | None = None) -> str:
+    """Resolve auth_client path, preferring the PyPI-bundled Linux binary by default."""
+
+    configured_text = str(configured).strip() if configured is not None else ""
+    if configured_text not in IMPLICIT_AUTH_CLIENT_NAMES:
+        return str(Path(configured_text).expanduser())
+
+    bundled = bundled_auth_client_path()
+    if bundled:
+        return bundled
+
+    found = shutil.which("auth_client")
+    return found or (configured_text or "auth_client")
+
+
+def bundled_auth_client_path() -> str | None:
+    """Return bundled Linux x86_64 auth_client path when supported and present."""
+
+    if platform.system().lower() != "linux":
+        return None
+    machine = platform.machine().lower()
+    if machine not in {"x86_64", "amd64"}:
+        return None
+    candidate = resource_files("chatecnu").joinpath("bin", "linux-x86_64", "auth_client")
+    try:
+        if candidate.is_file():
+            return str(candidate)
+    except OSError:
+        return None
+    return None
+
+
+def parse_check_login_info(stdout: str, stderr: str = "") -> NetworkAuthCheckInfo:
+    """Parse ``auth_client check`` stdout/stderr into online/account/username."""
+
+    combined = f"{stdout}\n{stderr}"
+    online = is_online_output(combined)
+    account_match = ACCOUNT_RE.search(combined)
+    username_match = USERNAME_RE.search(combined)
+    account = account_match.group("account") if account_match else None
+    username = username_match.group("username") if username_match else None
+    if not online and (account == "not_online_error" or username == "not_online_error"):
+        account = None
+        username = None
+    return NetworkAuthCheckInfo(online=online, account=account, username=username)
 
 
 def is_online_output(output: str) -> bool:
@@ -256,8 +373,11 @@ def is_online_output(output: str) -> bool:
 
     if MSG_TIMEOUT in output:
         return False
-    if NOT_ONLINE_BUG in output:
+    if NOT_ONLINE_BUG in output or "not_online_error" in output:
         return False
+    online_field = ONLINE_FIELD_RE.search(output)
+    if online_field:
+        return online_field.group("online").lower() == "true"
     return "is online" in output
 
 
@@ -301,11 +421,15 @@ __all__ = [
     "DEFAULT_SETTING_FILE",
     "MSG_TIMEOUT",
     "NOT_ONLINE_BUG",
+    "NetworkAuthCheckInfo",
     "NetworkAuthClient",
     "NetworkAuthCredentials",
     "NetworkAuthResult",
+    "bundled_auth_client_path",
     "has_auth_client_error",
     "is_online_output",
+    "parse_check_login_info",
     "redact_command",
     "redact_text",
+    "resolve_auth_client_path",
 ]

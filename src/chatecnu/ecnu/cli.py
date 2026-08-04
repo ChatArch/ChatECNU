@@ -21,6 +21,7 @@ from chatecnu.network_auth import (
     NetworkAuthCredentials,
     NetworkAuthResult,
     redact_text,
+    resolve_auth_client_path,
 )
 from .portal import BASE_URL
 
@@ -436,16 +437,17 @@ def network_auth_logout(
     """退出校园网。"""
 
     prefer_loaded_chatenv = network_auth_prefers_loaded_chatenv(ctx)
-    resolved_username = resolve_network_auth_username(
-        username=username,
-        interactive=interactive,
+    resolved_username = username or resolve_ecnu_config_value(
+        "ECNU_USERNAME",
+        ECNUConfig.ECNU_USERNAME,
         prefer_loaded_chatenv=prefer_loaded_chatenv,
     )
-    result = make_network_auth_client(
+    client = make_network_auth_client(
         auth_client_path=auth_client_path,
         setting_file=setting_file,
         prefer_loaded_chatenv=prefer_loaded_chatenv,
-    ).logout(resolved_username)
+    )
+    result = client.logout(resolved_username) if resolved_username else client.logout_current()
     emit_network_auth_result(result, json_output=json_output)
 
 
@@ -688,11 +690,12 @@ def make_network_auth_client(
     allow_argv_password: bool = False,
     prefer_loaded_chatenv: bool = False,
 ) -> NetworkAuthClient:
-    resolved_auth_client = auth_client_path or resolve_ecnu_config_value(
+    configured_auth_client = auth_client_path or resolve_ecnu_config_value(
         "ECNU_AUTH_CLIENT",
         ECNUConfig.ECNU_AUTH_CLIENT,
         prefer_loaded_chatenv=prefer_loaded_chatenv,
-    ) or "auth_client"
+    )
+    resolved_auth_client = resolve_auth_client_path(configured_auth_client)
     resolved_setting_file = setting_file or resolve_ecnu_config_value(
         "ECNU_AUTH_SETTING_FILE",
         ECNUConfig.ECNU_AUTH_SETTING_FILE,
@@ -795,10 +798,24 @@ def redact_network_auth_payload(payload: dict[str, object], *, secret_values: tu
 
 def format_network_auth_result(result: NetworkAuthResult) -> str:
     if result.action == "ensure-login" and result.skipped:
-        return "Already online; skipped."
-    if result.success:
-        return "Login OK." if result.action in {"login", "ensure-login"} else "auth_client OK."
-    return "auth_client failed."
+        base = "Already online; skipped."
+    elif result.action == "logout" and result.skipped:
+        base = "Already offline; skipped."
+    elif result.success:
+        base = "Login OK." if result.action in {"login", "ensure-login"} else "auth_client OK."
+    else:
+        return "auth_client failed."
+
+    details: list[str] = []
+    if result.online is not None:
+        details.append(f"Online: {str(result.online).lower()}")
+    if result.account:
+        details.append(f"Account: {result.account}")
+    if result.username and result.username != result.account:
+        details.append(f"Username: {result.username}")
+    elif result.username and result.action == "check":
+        details.append(f"Username: {result.username}")
+    return " ".join([base, *details]) if details else base
 
 
 def make_client(ctx: click.Context) -> Any:

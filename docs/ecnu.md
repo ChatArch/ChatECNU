@@ -29,13 +29,13 @@ ecnu home login --captcha ABCD -I
 
 ## 校园网联网 {#network-login}
 
-校园网联网管理本机网络出口认证，底层使用外部 `auth_client`。
+校园网联网管理本机网络出口认证，底层优先使用 PyPI 包内置的 Linux x86_64 `auth_client`。
 
 ```bash
-ecnu net check --auth-client /usr/local/bin/auth_client --json
-ecnu net login --auth-client /usr/local/bin/auth_client -I
-ecnu net logout --auth-client /usr/local/bin/auth_client --username "$ECNU_USERNAME" -I
-ecnu net ensure-login --auth-client /usr/local/bin/auth_client -I
+ecnu net check --json
+ecnu net login -I --allow-argv-password
+ecnu net logout -I
+ecnu net ensure-login -I --allow-argv-password
 ```
 
 `check` 不需要密码。`login` 和门户登录共用 `ECNU_USERNAME` / `ECNU_PASSWORD`；`logout` 只需要用户名。默认不传 `-c`，只有配置 `--setting-file` 或 `ECNU_AUTH_SETTING_FILE` 时才使用设置文件。

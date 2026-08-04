@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.1 - 2026-08-04
+
+### Added
+
+- Add API-first ECNU campus-network `auth_client` wrapper in `chatecnu.network_auth`.
+- Add `chatecnu network-auth check`, `login`, and `ensure-login` CLI commands for Linux deployments that already provide the external `auth_client` binary; check does not require credentials and defaults to bare `auth_client check`, while login is fail-closed by default and requires explicit `--allow-argv-password` for the legacy `auth_client -p PASSWORD` path.
+- Treat `auth_client` error log output such as missing setting-file errors as structured command failures even when the external binary exits 0.
+- Add ChatEnv fields `ECNU_AUTH_CLIENT` and `ECNU_AUTH_SETTING_FILE`.
+
+### Notes
+
+- ChatECNU does not vendor or redistribute the Linux-only `auth_client` binary; callers pass the runtime path explicitly or configure it through ChatEnv.
+
 ## 0.1.0 - 2026-06-27
 
 ### Added

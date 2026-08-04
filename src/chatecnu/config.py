@@ -19,6 +19,8 @@ class ECNUConfig(BaseEnvConfig):
     ECNU_VISITOR_PASSWORD1 = EnvField("ECNU_VISITOR_PASSWORD1", desc="Default password for visitor account suffix m1.", is_sensitive=True)
     ECNU_VISITOR_PASSWORD2 = EnvField("ECNU_VISITOR_PASSWORD2", desc="Default password for visitor account suffix m2.", is_sensitive=True)
     ECNU_VISITOR_REMARK = EnvField("ECNU_VISITOR_REMARK", default="default", desc="Default remark used by `chatecnu visitor default`.")
+    ECNU_AUTH_CLIENT = EnvField("ECNU_AUTH_CLIENT", default="auth_client", desc="Path or command name for the ECNU campus-network auth_client executable.")
+    ECNU_AUTH_SETTING_FILE = EnvField("ECNU_AUTH_SETTING_FILE", desc="auth_client setting file path, if required.")
 
     @classmethod
     def test(cls) -> None:

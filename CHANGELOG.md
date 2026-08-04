@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Shorten the visible CLI to `chatecnu auth ...`; keep `network-auth` as a hidden compatibility alias.
+
 ## 0.1.1 - 2026-08-04
 
 ### Added

@@ -51,6 +51,18 @@ class FakeNetworkAuthClient:
         )
 
 
+def test_auth_is_short_visible_command_and_network_auth_is_hidden_alias():
+    help_result = CliRunner().invoke(main, ["--help"])
+    assert help_result.exit_code == 0, help_result.output
+    assert "  auth" in help_result.output
+    assert "Network login." in help_result.output
+    assert "network-auth" not in help_result.output
+
+    alias_result = CliRunner().invoke(main, ["network-auth", "--help"])
+    assert alias_result.exit_code == 0, alias_result.output
+    assert "Usage: chatecnu network-auth" in alias_result.output
+
+
 def test_network_auth_check_cli_delegates_to_api_without_requiring_password(monkeypatch):
     fake = FakeNetworkAuthClient()
     monkeypatch.setattr(

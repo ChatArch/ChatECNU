@@ -157,38 +157,37 @@ chatecnu cookie-header
 chatecnu logout
 ```
 
-## 5. 校园网 auth_client 登录
+## 5. 校园网登录
 
-ECNU 校园网认证使用信息办提供的 Linux `auth_client` 二进制。ChatECNU 不打包或重新分发这个二进制，只提供 API-first 的 fail-closed wrapper：默认不会把密码交给 `auth_client -p PASSWORD`，避免静默暴露到本机进程列表。
+ChatECNU 只包装外部 Linux `auth_client`，不打包它。默认不把密码传给 `auth_client -p PASSWORD`。
 
-查看当前 `auth_client` 登录状态不需要密码：
+检查状态，不需要密码：
 
 ```bash
-chatecnu network-auth check \
+chatecnu auth check \
   --auth-client /usr/local/bin/auth_client \
   --json
 ```
 
-用于替代定时 shell 脚本时，优先使用 `ensure-login`：
+替代定时脚本：
 
 ```bash
-# 凭据从 ECNU_USERNAME/ECNU_PASSWORD、ChatEnv 或 -i 交互提示解析；不建议用 --password 写进 shell 历史。
-# 默认路径只会安全地执行 check；如果离线且需要登录，会结构化失败并提示 legacy 风险。
-chatecnu network-auth ensure-login \
+# 凭据来自 env/ChatEnv 或 -i。默认 fail-closed。
+chatecnu auth ensure-login \
   --auth-client /usr/local/bin/auth_client \
   -I
 ```
 
-如果你已经接受上游二进制只能通过 argv 接收密码带来的同机进程列表暴露风险，才显式开启 legacy 兼容路径：
+接受 argv 暴露风险后，才开 legacy 兼容：
 
 ```bash
-chatecnu network-auth ensure-login \
+chatecnu auth ensure-login \
   --auth-client /usr/local/bin/auth_client \
   --allow-argv-password \
   -I
 ```
 
-`ensure-login` 会先调用 `auth_client check`；如果 check 成功且已经在线，会跳过登录；如果离线，再进入登录路径。默认不传 `-c`，保持和 Precision 旧脚本一致；只有配置了 `--setting-file` / `ECNU_AUTH_SETTING_FILE` 时才传 setting file。所有 subprocess 调用都使用 argv list + `shell=False`，CLI/API 输出中的命令、stdout、stderr 都会 redacted runtime password。默认 credential 解析顺序是显式 CLI 参数 → 当前 process env → active ChatEnv；如果显式使用 `-e/--env-file`，则该 profile/env-file 优先。
+`ensure-login` 先 `check`，在线就跳过。默认不传 `-c`，除非配置 `--setting-file` / `ECNU_AUTH_SETTING_FILE`。调用使用 argv list + `shell=False`，输出会 redact 密码。显式 `-e/--env-file` 时优先读对应配置。旧 `network-auth` 仍是 `auth` 的隐藏兼容别名。
 
 如果固定部署路径，可写入 ChatEnv：
 

@@ -1,59 +1,56 @@
 # ChatECNU
 
-ChatECNU is the ChatArch ECNU portal and campus-network automation package. It owns ECNU login, session state, home/user reads, visitor accounts, and a safe wrapper for an external Linux `auth_client` binary. Generic network helpers belong to ChatNet.
+ChatECNU is a tool package for ECNU portal access and campus-network access. The package name remains `ChatECNU`; the daily command is `ecnu`.
 
-Docs: https://arch.gh.wzhecnu.cn/ChatECNU/en/
+## Documentation
 
-Chinese README: [README.md](README.md).
-
-## Documentation entry points
-
-| Goal | Entry |
+| Task | Link |
 | --- | --- |
-| Install and smoke test | https://arch.gh.wzhecnu.cn/ChatECNU/en/quickstart/ |
-| Review commands | https://arch.gh.wzhecnu.cn/ChatECNU/en/cli-tree/ |
-| Check package boundaries | https://arch.gh.wzhecnu.cn/ChatECNU/en/capability-map/ |
-| Review Python / CLI interfaces | https://arch.gh.wzhecnu.cn/ChatECNU/en/interface-tree/ |
-| Portal, visitor accounts, and network login | https://arch.gh.wzhecnu.cn/ChatECNU/en/ecnu/ |
+| Installation and smoke checks | https://arch.gh.wzhecnu.cn/ChatECNU/en/quickstart/ |
+| CLI tree | https://arch.gh.wzhecnu.cn/ChatECNU/en/cli-tree/ |
+| ChatEnv variables | https://arch.gh.wzhecnu.cn/ChatECNU/en/chatenv/ |
+| ECNU usage | https://arch.gh.wzhecnu.cn/ChatECNU/en/ecnu/ |
 
-## Quickstart
-
-```bash
-pip install -e ".[dev,docs]"
-chatecnu --help
-python -m pytest -q
-```
-
-Optional CAPTCHA recognition:
+## Install
 
 ```bash
-pip install -e ".[captcha]"
-chatecnu login --username "$ECNU_USERNAME" -i
+pip install ChatECNU
 ```
 
-## Common commands
+For CAPTCHA OCR support:
 
 ```bash
-chatecnu status
-chatecnu login -I
-chatecnu home
-chatecnu user-info
-chatecnu visitor --help
+pip install "ChatECNU[captcha]"
 ```
 
-Network login wrapper:
+## Command Shape
+
+```text
+ecnu
+├── home      # ECNU portal
+├── net       # Campus network access
+└── visitor   # Visitor accounts
+```
+
+Portal commands live under `home`:
 
 ```bash
-# Check status; no password needed.
-chatecnu auth check --auth-client /usr/local/bin/auth_client --json
-
-# Credentials come from env, ChatEnv, or prompts. Default login is fail-closed.
-chatecnu auth ensure-login --auth-client /usr/local/bin/auth_client -I
-
-# Enable the legacy argv-password path only after accepting local exposure.
-chatecnu auth ensure-login --auth-client /usr/local/bin/auth_client --allow-argv-password -I
+ecnu home login -i
+ecnu home info
+ecnu home status
+ecnu home user
+ecnu home logout
 ```
 
-ChatECNU does not bundle `auth_client`. Use `--auth-client` or `ECNU_AUTH_CLIENT`. The old `network-auth` command remains as a hidden compatibility alias.
+Campus-network commands live under `net`:
 
-Do not print or commit passwords, cookies, SMS codes, or sessions.
+```bash
+ecnu net check --auth-client /usr/local/bin/auth_client --json
+ecnu net login --auth-client /usr/local/bin/auth_client -I
+ecnu net logout --auth-client /usr/local/bin/auth_client --username "$ECNU_USERNAME" -I
+ecnu net ensure-login --auth-client /usr/local/bin/auth_client -I
+```
+
+ChatECNU does not bundle `auth_client`. Use `--auth-client` or `ECNU_AUTH_CLIENT`. Portal access and campus-network access share `ECNU_USERNAME` / `ECNU_PASSWORD`.
+
+Do not print or commit passwords, cookies, SMS codes, or session values.

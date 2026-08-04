@@ -25,16 +25,6 @@ from chatecnu.network_auth import (
 from .portal import BASE_URL
 
 
-class HiddenAliasGroup(click.Group):
-    """Click group with aliases omitted from help."""
-
-    def __init__(self, *args: Any, hidden_aliases: dict[str, str] | None = None, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.hidden_aliases = hidden_aliases or {}
-
-    def get_command(self, ctx: click.Context, cmd_name: str) -> click.Command | None:
-        return super().get_command(ctx, self.hidden_aliases.get(cmd_name, cmd_name))
-
 LOGIN_SCHEMA = CommandSchema(
     name="ecnu-login",
     fields=(
@@ -58,11 +48,16 @@ VISITOR_CREATE_SCHEMA = CommandSchema(
 )
 
 NETWORK_AUTH_LOGIN_SCHEMA = CommandSchema(
-    name="ecnu-network-auth-login",
+    name="ecnu-net-login",
     fields=(
         CommandField("username", prompt="ECNU username", required=True),
         CommandField("password", prompt="ECNU password", required=True, sensitive=True),
     ),
+)
+
+NETWORK_AUTH_USERNAME_SCHEMA = CommandSchema(
+    name="ecnu-network-username",
+    fields=(CommandField("username", prompt="ECNU username", required=True),),
 )
 
 VISITOR_UPDATE_SCHEMA = CommandSchema(
@@ -85,8 +80,8 @@ VISITOR_DEFAULT_SCHEMA = CommandSchema(
 )
 
 
-@click.group(name="chatecnu", cls=HiddenAliasGroup, hidden_aliases={"network-auth": "auth"})
-@click.version_option(__version__, prog_name="chatecnu")
+@click.group(name="ecnu")
+@click.version_option(__version__)
 @click.option(
     "--base-url",
     default=None,
@@ -131,6 +126,11 @@ def cli(
     }
 
 
+@cli.group(name="home")
+def home_group() -> None:
+    """ECNU 门户。"""
+
+
 @cli.command(name="selftest", hidden=True)
 def selftest() -> None:
     """Run local parser self-test without network access."""
@@ -140,7 +140,7 @@ def selftest() -> None:
     echo_json(run_selftest())
 
 
-@cli.command(name="login-init", hidden=True)
+@home_group.command(name="login-init", hidden=True)
 @click.option(
     "--captcha-path",
     default=None,
@@ -155,7 +155,7 @@ def login_init(ctx: click.Context, captcha_path: str | None) -> None:
     echo_json(call_client(ctx, lambda client: client.login_init(target_path)))
 
 
-@cli.command(name="login")
+@home_group.command(name="login")
 @click.option("--username", default=None, help="ECNU 用户名，或设置 ECNU_USERNAME。")
 @click.option("--password", default=None, help="ECNU 密码，或设置 ECNU_PASSWORD。")
 @click.option("--captcha", default=None, hidden=True, help="Captcha text from login-init image.")
@@ -183,9 +183,9 @@ def login(
     json_output: bool,
     interactive: bool | None,
 ) -> None:
-    """登录 ECNU。"""
+    """登录门户。"""
 
-    values = resolve_login_inputs(username=username, password=password, interactive=interactive, command_name="login")
+    values = resolve_login_inputs(username=username, password=password, interactive=interactive, command_name="home login")
     target_path = Path(captcha_path).expanduser() if captcha_path else default_captcha_path()
     if captcha:
         result = call_client(
@@ -207,7 +207,7 @@ def login(
     emit_login_result(result, json_output=json_output)
 
 
-@cli.command(name="login-auto", hidden=True)
+@home_group.command(name="login-auto", hidden=True)
 @click.option("--username", default=None, help="ECNU 用户名，或设置 ECNU_USERNAME。")
 @click.option("--password", default=None, help="ECNU 密码，或设置 ECNU_PASSWORD。")
 @click.option("--sms-code", default=None, help="服务端要求的短信码。")
@@ -233,7 +233,7 @@ def login_auto(
     json_output: bool,
     interactive: bool | None,
 ) -> None:
-    """Hidden compatibility alias for OCR-backed login."""
+    """Hidden OCR-backed login helper."""
 
     values = resolve_login_inputs(username=username, password=password, interactive=interactive, command_name="login-auto")
     target_path = Path(captcha_path).expanduser() if captcha_path else default_captcha_path()
@@ -251,16 +251,16 @@ def login_auto(
     emit_login_result(result, json_output=json_output)
 
 
-@cli.command(name="status")
+@home_group.command(name="status")
 @click.option("--json", "json_output", is_flag=True, help="输出 JSON。")
 @click.pass_context
 def status(ctx: click.Context, json_output: bool) -> None:
-    """会话状态。"""
+    """门户会话状态。"""
 
     emit_status_result(session_status(ctx), json_output=json_output)
 
 
-@cli.command(name="session-info", hidden=True)
+@home_group.command(name="session-info", hidden=True)
 @click.option("--json", "json_output", is_flag=True, hidden=True, help="输出 JSON。")
 @click.pass_context
 def session_info(ctx: click.Context, json_output: bool) -> None:
@@ -269,7 +269,7 @@ def session_info(ctx: click.Context, json_output: bool) -> None:
     emit_status_result(session_status(ctx), json_output=json_output)
 
 
-@cli.command(name="cookie-header", hidden=True)
+@home_group.command(name="cookie-header", hidden=True)
 @click.pass_context
 def cookie_header(ctx: click.Context) -> None:
     """Print the current Cookie header from state/session."""
@@ -277,11 +277,11 @@ def cookie_header(ctx: click.Context) -> None:
     click.echo(make_client(ctx).cookie_header())
 
 
-@cli.command(name="logout")
+@home_group.command(name="logout")
 @click.option("--json", "json_output", is_flag=True, help="输出 JSON。")
 @click.pass_context
 def logout(ctx: click.Context, json_output: bool) -> None:
-    """退出登录。"""
+    """退出门户会话。"""
 
     emit_simple_result(
         call_client(ctx, lambda client: client.logout()),
@@ -291,20 +291,20 @@ def logout(ctx: click.Context, json_output: bool) -> None:
     )
 
 
-@cli.command(name="home")
+@home_group.command(name="info")
 @click.option("--json", "json_output", is_flag=True, help="输出 JSON。")
 @click.pass_context
-def home(ctx: click.Context, json_output: bool) -> None:
-    """首页摘要。"""
+def home_info(ctx: click.Context, json_output: bool) -> None:
+    """门户首页摘要。"""
 
     emit_home_result(call_client(ctx, lambda client: client.home_summary()), json_output=json_output)
 
 
-@cli.command(name="user-info")
+@home_group.command(name="user")
 @click.option("--json", "json_output", is_flag=True, help="输出 JSON。")
 @click.pass_context
 def user_info(ctx: click.Context, json_output: bool) -> None:
-    """用户信息。"""
+    """门户用户信息。"""
 
     emit_mapping_result(
         call_client(ctx, lambda client: client.user_info()),
@@ -350,41 +350,9 @@ def detail_log(ctx: click.Context, start: str | None, end: str | None, limit: in
     )
 
 
-@cli.command(name="auth-log", hidden=True)
-@click.option("--start", default=None, help="Start time.")
-@click.option("--end", default=None, help="End time.")
-@click.option("--limit", default=None, type=int, help="Maximum rows to print.")
-@click.option("--json", "json_output", is_flag=True, hidden=True, help="输出 JSON。")
-@click.pass_context
-def auth_log_alias(ctx: click.Context, start: str | None, end: str | None, limit: int | None, json_output: bool) -> None:
-    """Hidden compatibility alias for debug auth-log."""
-
-    emit_log_result(
-        call_client(ctx, lambda client: client.auth_logs(start, end, limit)),
-        json_output=json_output,
-        title="Authentication logs",
-    )
-
-
-@cli.command(name="detail-log", hidden=True)
-@click.option("--start", default=None, help="Start time.")
-@click.option("--end", default=None, help="End time.")
-@click.option("--limit", default=None, type=int, help="Maximum rows to print.")
-@click.option("--json", "json_output", is_flag=True, hidden=True, help="输出 JSON。")
-@click.pass_context
-def detail_log_alias(ctx: click.Context, start: str | None, end: str | None, limit: int | None, json_output: bool) -> None:
-    """Hidden compatibility alias for debug detail-log."""
-
-    emit_log_result(
-        call_client(ctx, lambda client: client.detail_logs(start, end, limit)),
-        json_output=json_output,
-        title="Network detail logs",
-    )
-
-
-@cli.group(name="auth")
+@cli.group(name="net")
 def network_auth_group() -> None:
-    """校园网登录。"""
+    """校园网联网。"""
 
 
 @network_auth_group.command(name="check")
@@ -448,6 +416,37 @@ def network_auth_login(
         prefer_loaded_chatenv=prefer_loaded_chatenv,
     ).login(credentials)
     emit_network_auth_result(result, json_output=json_output, secret_values=(credentials.password,))
+
+
+@network_auth_group.command(name="logout")
+@click.option("--auth-client", "auth_client_path", default=None, help="auth_client 路径。")
+@click.option("--setting-file", default=None, help="设置文件。")
+@click.option("--username", default=None, help="ECNU 用户名。")
+@click.option("--json", "json_output", is_flag=True, help="输出 JSON。")
+@add_interactive_option
+@click.pass_context
+def network_auth_logout(
+    ctx: click.Context,
+    auth_client_path: str | None,
+    setting_file: str | None,
+    username: str | None,
+    json_output: bool,
+    interactive: bool | None,
+) -> None:
+    """退出校园网。"""
+
+    prefer_loaded_chatenv = network_auth_prefers_loaded_chatenv(ctx)
+    resolved_username = resolve_network_auth_username(
+        username=username,
+        interactive=interactive,
+        prefer_loaded_chatenv=prefer_loaded_chatenv,
+    )
+    result = make_network_auth_client(
+        auth_client_path=auth_client_path,
+        setting_file=setting_file,
+        prefer_loaded_chatenv=prefer_loaded_chatenv,
+    ).logout(resolved_username)
+    emit_network_auth_result(result, json_output=json_output)
 
 
 @network_auth_group.command(name="ensure-login")
@@ -541,7 +540,7 @@ def visitor_create(
         schema=VISITOR_CREATE_SCHEMA,
         provided={"remark": remark},
         interactive=interactive,
-        usage="Usage: chatecnu visitor create --remark TEXT [-i|-I]",
+        usage="Usage: ecnu visitor create --remark TEXT [-i|-I]",
     )
     emit_mutation_result(
         call_client(ctx, lambda client: client.create_visitor(values["remark"], dry_run=dry_run)),
@@ -609,7 +608,7 @@ def visitor_update(
         schema=VISITOR_UPDATE_SCHEMA,
         provided={"visitor_id": visitor_id, "remark": remark, "password": password},
         interactive=interactive,
-        usage="Usage: chatecnu visitor update --id ID --remark TEXT --password TEXT [-i|-I]",
+        usage="Usage: ecnu visitor update --id ID --remark TEXT --password TEXT [-i|-I]",
     )
     emit_mutation_result(
         call_client(
@@ -645,7 +644,7 @@ def visitor_delete(
         schema=VISITOR_ID_SCHEMA,
         provided={"visitor_id": visitor_id},
         interactive=interactive,
-        usage="Usage: chatecnu visitor delete --id ID [-i|-I]",
+        usage="Usage: ecnu visitor delete --id ID [-i|-I]",
     )
     emit_mutation_result(
         call_client(ctx, lambda client: client.delete_visitor(values["visitor_id"], dry_run=dry_run)),
@@ -673,7 +672,7 @@ def visitor_lock(
         schema=VISITOR_ID_SCHEMA,
         provided={"visitor_id": visitor_id},
         interactive=interactive,
-        usage="Usage: chatecnu visitor lock --id ID [-i|-I]",
+        usage="Usage: ecnu visitor lock --id ID [-i|-I]",
     )
     emit_mutation_result(
         call_client(ctx, lambda client: client.lock_visitor(values["visitor_id"], dry_run=dry_run)),
@@ -730,9 +729,31 @@ def resolve_network_auth_credentials(
             ),
         },
         interactive=interactive,
-        usage="Usage: chatecnu auth login --username USER --password PASSWORD [-i|-I]",
+        usage="Usage: ecnu net login --username USER --password PASSWORD [-i|-I]",
     )
     return NetworkAuthCredentials(username=values["username"], password=values["password"])
+
+
+def resolve_network_auth_username(
+    *,
+    username: str | None,
+    interactive: bool | None,
+    prefer_loaded_chatenv: bool = False,
+) -> str:
+    values = resolve_command_inputs(
+        schema=NETWORK_AUTH_USERNAME_SCHEMA,
+        provided={
+            "username": username
+            or resolve_ecnu_config_value(
+                "ECNU_USERNAME",
+                ECNUConfig.ECNU_USERNAME,
+                prefer_loaded_chatenv=prefer_loaded_chatenv,
+            ),
+        },
+        interactive=interactive,
+        usage="Usage: ecnu net logout --username USER [-i|-I]",
+    )
+    return values["username"]
 
 
 def network_auth_prefers_loaded_chatenv(ctx: click.Context) -> bool:
@@ -1064,7 +1085,7 @@ def resolve_login_inputs(
     usage = f"Usage: chatecnu {command_name} --username TEXT --password TEXT [-i|-I]"
     if include_captcha:
         provided["captcha"] = captcha
-        usage = "Usage: chatecnu login --username TEXT --password TEXT --captcha TEXT [-i|-I]"
+        usage = "Usage: ecnu home login --username TEXT --password TEXT --captcha TEXT [-i|-I]"
     return resolve_command_inputs(schema=schema, provided=provided, interactive=interactive, usage=usage)
 
 
@@ -1079,7 +1100,7 @@ def resolve_default_visitor_inputs(
         schema=VISITOR_DEFAULT_SCHEMA,
         provided={"password1": password1 or ECNUConfig.ECNU_VISITOR_PASSWORD1.value},
         interactive=interactive,
-        usage="Usage: chatecnu visitor default --password1 TEXT [--password2 TEXT] [--remark TEXT] [-i|-I]",
+        usage="Usage: ecnu visitor default --password1 TEXT [--password2 TEXT] [--remark TEXT] [-i|-I]",
     )
     resolved_password1 = values["password1"]
     resolved_password2 = password2 or ECNUConfig.ECNU_VISITOR_PASSWORD2.value
@@ -1091,7 +1112,7 @@ def resolve_default_visitor_inputs(
         raise click.UsageError("Password2 requires password1 so the default visitor order remains deterministic.")
     username_prefix = ECNUConfig.ECNU_USERNAME.value
     if not username_prefix:
-        raise click.UsageError("ECNU_USERNAME must be set before running `chatecnu visitor default`.")
+        raise click.UsageError("ECNU_USERNAME must be set before running `ecnu visitor default`.")
     return {
         "username_prefix": username_prefix,
         "password1": resolved_password1,

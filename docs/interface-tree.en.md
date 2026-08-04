@@ -1,86 +1,35 @@
 # Interface Tree
 
-This page lists implemented user entry points and Python interfaces only. Planned capabilities stay out of the interface tree.
-
-## CLI entry points
+## Package Structure
 
 ```text
 chatecnu
-├── auth
-│   ├── check
-│   ├── login
-│   └── ensure-login
-├── home
-├── login
-├── logout
-├── status
-├── user-info
-└── visitor
-    ├── list
-    ├── get
-    ├── create
-    ├── default
-    ├── update
-    └── delete
+├── cli.main                 # Click entrypoint; installation provides ecnu
+├── config.ECNUConfig        # ChatEnv ecnu type
+├── network_auth             # Campus-network auth_client wrapper
+└── ecnu.portal              # ECNU portal client
 ```
 
-Hidden compatibility entry: `network-auth` → `auth`. Hidden diagnostics live under `debug` and are not part of the main user interface.
+## Command to Python Mapping
 
-## Python modules
-
-```text
-chatecnu
-├── cli.main
-├── config.ECNUConfig
-├── network_auth
-│   ├── NetworkAuthClient
-│   ├── NetworkAuthCredentials
-│   ├── NetworkAuthResult
-│   ├── redact_command
-│   └── redact_text
-└── ecnu
-    ├── portal.PortalClient
-    └── captcha.recognize_captcha_topk
-```
-
-## `chatecnu.network_auth`
-
-| Interface | Purpose |
+| Python API | Command mapping |
 | --- | --- |
-| `NetworkAuthClient.check()` | Run `auth_client check` and parse online state |
-| `NetworkAuthClient.login(credentials)` | Log in; argv passwords are refused by default |
-| `NetworkAuthClient.ensure_login(credentials)` | Check first, then log in only when offline |
-| `NetworkAuthCredentials` | Username and password structure |
-| `NetworkAuthResult` | Structured result, returncode, stdout/stderr, online state |
+| `PortalClient.login_init()` | `ecnu home login-init` (hidden) |
+| `PortalClient.login()` / `login_auto()` | `ecnu home login` |
+| `PortalClient.logout()` | `ecnu home logout` |
+| `PortalClient.home_summary()` | `ecnu home info` |
+| `PortalClient.user_info()` | `ecnu home user` |
+| `PortalClient.auth_logs()` / `detail_logs()` | `ecnu debug ...` (hidden) |
+| `NetworkAuthClient.check()` | `ecnu net check` |
+| `NetworkAuthClient.login()` | `ecnu net login` |
+| `NetworkAuthClient.logout()` | `ecnu net logout` |
+| `NetworkAuthClient.ensure_login()` | `ecnu net ensure-login` |
+| `PortalClient.list_visitors()` | `ecnu visitor list` |
+| `PortalClient.get_visitor()` | `ecnu visitor get` |
+| `PortalClient.create_visitor()` | `ecnu visitor create` |
+| `PortalClient.update_visitor()` | `ecnu visitor update` |
+| `PortalClient.delete_visitor()` | `ecnu visitor delete` |
 
-## `chatecnu.ecnu.portal.PortalClient`
+## ChatEnv Interface
 
-| Interface | CLI mapping |
-| --- | --- |
-| `login_init()` | `chatecnu login-init` hidden command |
-| `login()` / `login_auto()` | `chatecnu login` |
-| `logout()` | `chatecnu logout` |
-| `home_summary()` | `chatecnu home` |
-| `user_info()` | `chatecnu user-info` |
-| `auth_logs()` / `detail_logs()` | `chatecnu debug ...` |
-| `list_visitors()` | `chatecnu visitor list` |
-| `get_visitor()` | `chatecnu visitor get` |
-| `create_visitor()` | `chatecnu visitor create` |
-| `update_visitor()` | `chatecnu visitor update` |
-| `delete_visitor()` | `chatecnu visitor delete` |
-
-## ChatEnv interface
-
-```text
-ECNU_USERNAME
-ECNU_PASSWORD
-ECNU_COOKIE
-ECNU_BASE_URL
-ECNU_VISITOR_PASSWORD1
-ECNU_VISITOR_PASSWORD2
-ECNU_VISITOR_REMARK
-ECNU_AUTH_CLIENT
-ECNU_AUTH_SETTING_FILE
-```
-
-Sensitive fields are masked by ChatEnv and CLI output code.
+See [ChatEnv Variables](chatenv.md) for the full schema. Sensitive fields are masked by ChatEnv and command renderers.

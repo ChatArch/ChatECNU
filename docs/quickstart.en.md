@@ -3,55 +3,48 @@
 ## Install
 
 ```bash
-pip install -e ".[dev,docs]"
-chatecnu --help
+pip install ChatECNU
 ```
 
-Optional CAPTCHA recognition:
+Install CAPTCHA OCR support when needed:
 
 ```bash
-pip install -e ".[captcha]"
+pip install "ChatECNU[captcha]"
 ```
 
-## Configure
+## Prepare ChatEnv
 
-ChatECNU uses the ChatEnv `ecnu` type:
+ChatECNU registers the ChatEnv type `ecnu`.
 
 ```bash
-chatenv test -t ecnu
-chatenv cat -t ecnu
+chatenv list
+chatenv new default -t ecnu -I --yes
 ```
 
-Common fields:
+Common variables:
 
 ```text
-ECNU_USERNAME
-ECNU_PASSWORD
-ECNU_COOKIE
-ECNU_AUTH_CLIENT
-ECNU_AUTH_SETTING_FILE
+ECNU_USERNAME=your account
+ECNU_PASSWORD=your password
+ECNU_AUTH_CLIENT=/usr/local/bin/auth_client
 ```
 
-Sensitive fields are masked.
+See [ChatEnv Variables](chatenv.md) for the full schema.
 
-## Small checks
+## Portal Smoke
 
 ```bash
-chatecnu status
-chatecnu home
-chatecnu user-info
+ecnu home login -i
+ecnu home info
+ecnu home status
+ecnu home user
 ```
 
-Network status checks do not need a password:
+## Campus Network Smoke
 
 ```bash
-chatecnu auth check --auth-client /usr/local/bin/auth_client --json
+ecnu net check --auth-client /usr/local/bin/auth_client --json
+ecnu net ensure-login --auth-client /usr/local/bin/auth_client -I
 ```
 
-## Safety default
-
-The legacy `auth_client` login path puts the password in process arguments. ChatECNU refuses that path by default. Add this flag only after accepting local process-list exposure:
-
-```bash
---allow-argv-password
-```
+`check` does not need a password. `login` / `ensure-login` do not pass passwords through external process argv by default. Use `--allow-argv-password` only after accepting local process-list exposure.

@@ -9,7 +9,7 @@ class ECNUConfig(BaseEnvConfig):
     """ECNU self-service portal environment variables."""
 
     _title = "ECNU"
-    _aliases = ["ecnu", "chatecnu-ecnu"]
+    _aliases = ["ecnu"]
     _storage_dir = "ECNU"
 
     ECNU_USERNAME = EnvField("ECNU_USERNAME", desc="ECNU 用户名。")

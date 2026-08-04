@@ -3,55 +3,48 @@
 ## 安装
 
 ```bash
-pip install -e ".[dev,docs]"
-chatecnu --help
+pip install ChatECNU
 ```
 
-可选验证码识别：
+需要验证码识别时安装：
 
 ```bash
-pip install -e ".[captcha]"
+pip install "ChatECNU[captcha]"
 ```
 
-## 配置
+## 准备 ChatEnv
 
-ChatECNU 使用 ChatEnv 的 `ecnu` 类型：
+ChatECNU 的 ChatEnv 类型是 `ecnu`。
 
 ```bash
-chatenv test -t ecnu
-chatenv cat -t ecnu
+chatenv list
+chatenv new default -t ecnu -I --yes
 ```
 
-常用字段：
+常用变量：
 
 ```text
-ECNU_USERNAME
-ECNU_PASSWORD
-ECNU_COOKIE
-ECNU_AUTH_CLIENT
-ECNU_AUTH_SETTING_FILE
+ECNU_USERNAME=你的学号或账号
+ECNU_PASSWORD=你的密码
+ECNU_AUTH_CLIENT=/usr/local/bin/auth_client
 ```
 
-敏感字段会脱敏显示。
+完整变量见 [ChatEnv 变量](chatenv.md)。
 
-## 最小检查
+## 门户最小验证
 
 ```bash
-chatecnu status
-chatecnu home
-chatecnu user-info
+ecnu home login -i
+ecnu home info
+ecnu home status
+ecnu home user
 ```
 
-校园网状态检查不需要密码：
+## 校园网最小验证
 
 ```bash
-chatecnu auth check --auth-client /usr/local/bin/auth_client --json
+ecnu net check --auth-client /usr/local/bin/auth_client --json
+ecnu net ensure-login --auth-client /usr/local/bin/auth_client -I
 ```
 
-## 安全默认值
-
-`auth_client` 的旧登录接口需要把密码放入进程参数。ChatECNU 默认拒绝这条路径。只有明确接受本机进程列表暴露风险时，才加：
-
-```bash
---allow-argv-password
-```
+`check` 不需要密码。`login` / `ensure-login` 默认不把密码放入外部进程参数；只有明确接受本机进程列表暴露风险后才使用 `--allow-argv-password`。

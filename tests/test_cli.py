@@ -9,8 +9,10 @@ def test_help_lists_ecnu_commands():
     result = CliRunner().invoke(main, ["--help"])
 
     assert result.exit_code == 0
-    assert "status" in result.output
+    assert "home" in result.output
+    assert "net" in result.output
     assert "visitor" in result.output
+    assert "status" not in result.output
 
 
 def test_selftest_runs_without_network():

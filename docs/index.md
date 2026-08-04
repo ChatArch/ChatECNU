@@ -1,49 +1,49 @@
 # ChatECNU 文档
 
-ChatECNU 是 ECNU 门户和校园网登录包装工具。它只做 ECNU 相关能力；通用网络能力归 ChatNet。
-
-## 按场景选择
-
-| 场景 | 入口 |
-| --- | --- |
-| 新机器安装与最小验证 | [快速开始](quickstart.md) |
-| 查看当前可见命令 | [命令树](cli-tree.md) |
-| 判断 ChatECNU / ChatNet / `auth_client` 边界 | [能力地图](capability-map.md) |
-| 查看 Python 接口和命令行映射 | [接口树](interface-tree.md) |
-| 门户登录、会话和访客账号 | [ECNU 使用](ecnu.md) |
-| 校园网 `auth_client` 状态检查 | [校园网登录](ecnu.md#network-login) |
-
-## 文档栏目
+ChatECNU 提供 ECNU 门户和校园网联网的 Python API 与命令行工具。日常命令主推 `ecnu`。
 
 <div class="grid cards" markdown>
 
-- **入门**
+-   :material-home: **门户**
 
-  [快速开始](quickstart.md)：安装、配置、最小验证。
+    ---
 
-- **命令与接口**
+    登录门户、查看首页摘要、会话状态和用户信息。
 
-  [命令树](cli-tree.md) 看真实命令面；[能力地图](capability-map.md) 看责任边界；[接口树](interface-tree.md) 看 Python / CLI 映射。
+    [`ecnu home ...`](cli-tree.md#home)
 
-- **使用指南**
+-   :material-lan-connect: **校园网联网**
 
-  [ECNU 使用](ecnu.md)：门户登录、会话查询、访客账号、校园网登录。
+    ---
+
+    包装外部 `auth_client`，检查、登录、退出或确保本机在线。
+
+    [`ecnu net ...`](cli-tree.md#net)
+
+-   :material-account-group: **访客账号**
+
+    ---
+
+    管理 ECNU 访客账号，修改类命令支持预演。
+
+    [`ecnu visitor ...`](cli-tree.md#visitor)
+
+-   :material-key: **ChatEnv 配置**
+
+    ---
+
+    使用 `ecnu` 类型保存账号、密码、Cookie 和本机联网配置。
+
+    [查看变量](chatenv.md)
 
 </div>
 
-## 当前边界
+## 快速入口
 
-| 组件 | 责任 |
+| 目标 | 入口 |
 | --- | --- |
-| ChatECNU | ECNU 门户、访客账号、校园网 `auth_client` 包装 |
-| ChatNet | 通用网络、浏览器、表格和会话基础能力 |
-| `auth_client` | 外部 Linux 程序，不随包分发 |
-| ChatDNS / 证书 / Nginx | 不属于本包 |
-
-## 常用入口
-
-```bash
-chatecnu --help
-chatecnu auth check --auth-client /usr/local/bin/auth_client --json
-chatecnu visitor --help
-```
+| 安装并验证 | [快速开始](quickstart.md) |
+| 查看完整命令树 | [命令树](cli-tree.md) |
+| 区分能力边界 | [能力地图](capability-map.md) |
+| 对照 Python API | [接口树](interface-tree.md) |
+| 门户与校园网用法 | [ECNU 使用](ecnu.md) |

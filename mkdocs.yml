@@ -37,6 +37,7 @@ plugins:
             首页: Home
             入门: Getting Started
             快速开始: Quickstart
+            ChatEnv 变量: ChatEnv Variables
             命令与接口: Commands and Interfaces
             命令树: CLI Tree
             能力地图: Capability Map
@@ -60,6 +61,7 @@ nav:
   - 首页: index.md
   - 入门:
       - 快速开始: quickstart.md
+      - ChatEnv 变量: chatenv.md
   - 命令与接口:
       - 命令树: cli-tree.md
       - 能力地图: capability-map.md

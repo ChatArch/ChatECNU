@@ -1,49 +1,49 @@
 # ChatECNU Documentation
 
-ChatECNU provides ECNU portal automation and a campus-network `auth_client` wrapper. ECNU-specific behavior belongs here; generic network helpers belong to ChatNet.
-
-## Pick a path
-
-| Goal | Page |
-| --- | --- |
-| Install and smoke test | [Quickstart](quickstart.md) |
-| Review visible commands | [CLI Tree](cli-tree.md) |
-| Check ChatECNU / ChatNet / `auth_client` boundaries | [Capability Map](capability-map.md) |
-| Review Python interfaces and CLI mapping | [Interface Tree](interface-tree.md) |
-| Use portal login, sessions, and visitors | [ECNU Usage](ecnu.md) |
-| Check campus-network login state | [Network Login](ecnu.md#network-login) |
-
-## Sections
+ChatECNU provides Python APIs and command-line tools for ECNU portal access and campus-network access. The daily command is `ecnu`.
 
 <div class="grid cards" markdown>
 
-- **Getting Started**
+-   :material-home: **Portal**
 
-  [Quickstart](quickstart.md): install, configure, and run the smallest checks.
+    ---
 
-- **Commands and Interfaces**
+    Login, read the portal home summary, inspect session state, and read user info.
 
-  [CLI Tree](cli-tree.md) shows the real command surface; [Capability Map](capability-map.md) shows package boundaries; [Interface Tree](interface-tree.md) maps Python and CLI interfaces.
+    [`ecnu home ...`](cli-tree.md#home)
 
-- **Usage Guide**
+-   :material-lan-connect: **Campus network**
 
-  [ECNU Usage](ecnu.md): portal login, session reads, visitor accounts, and network login.
+    ---
+
+    Wrap an external `auth_client` to check, login, logout, or ensure local network access.
+
+    [`ecnu net ...`](cli-tree.md#net)
+
+-   :material-account-group: **Visitor accounts**
+
+    ---
+
+    Manage ECNU visitor accounts with dry-run support for mutations.
+
+    [`ecnu visitor ...`](cli-tree.md#visitor)
+
+-   :material-key: **ChatEnv config**
+
+    ---
+
+    Store credentials, Cookies, and local network settings under the `ecnu` type.
+
+    [View variables](chatenv.md)
 
 </div>
 
-## Boundary
+## Start Here
 
-| Component | Responsibility |
+| Goal | Entry |
 | --- | --- |
-| ChatECNU | ECNU portal, visitor accounts, and `auth_client` wrapper |
-| ChatNet | Generic network, browser, table, and session helpers |
-| `auth_client` | External Linux binary, not bundled |
-| ChatDNS / certificates / Nginx | Out of scope for this package |
-
-## Common entry points
-
-```bash
-chatecnu --help
-chatecnu auth check --auth-client /usr/local/bin/auth_client --json
-chatecnu visitor --help
-```
+| Install and verify | [Quickstart](quickstart.md) |
+| Read the command tree | [CLI Tree](cli-tree.md) |
+| Check capability boundaries | [Capability Map](capability-map.md) |
+| Map to Python APIs | [Interface Tree](interface-tree.md) |
+| Use portal and network commands | [ECNU Usage](ecnu.md) |

@@ -1,113 +1,52 @@
 # ECNU 使用
 
-## 配置
+ChatECNU 把 ECNU 相关能力分成三组：`home` 管门户，`net` 管校园网联网，`visitor` 管访客账号。
 
-ChatECNU 读取 ChatEnv 的 `ecnu` 配置，也支持命令行参数覆盖。
+## 门户 {#portal}
 
-```bash
-chatenv test -t ecnu
-chatenv cat -t ecnu
-```
-
-常用字段：
-
-```text
-ECNU_USERNAME
-ECNU_PASSWORD
-ECNU_COOKIE
-ECNU_BASE_URL
-ECNU_AUTH_CLIENT
-ECNU_AUTH_SETTING_FILE
-```
-
-如需多配置：
+门户登录建立 ECNU Web/API 会话，供首页摘要、用户信息和访客账号接口使用。
 
 ```bash
-chatenv save work -t ecnu
-chatenv use work -t ecnu
-chatecnu -e work status
+ecnu home login --rounds 3 --topk 5 -I
+ecnu home info
+ecnu home status
+ecnu home user
+ecnu home logout
 ```
 
-## 门户登录
+短信验证码：
 
 ```bash
-chatecnu login --rounds 3 --topk 5 -I
+ecnu home login --sms-code 123456 --rounds 3 --topk 5 -I
 ```
 
-需要短信码时：
+手动验证码流程保留为隐藏 helper：
 
 ```bash
-chatecnu login --sms-code 123456 --rounds 3 --topk 5 -I
+ecnu home login-init
+ecnu home login --captcha ABCD -I
 ```
 
-自动验证码不可用时，可先下载验证码再手动提交：
+## 校园网联网 {#network-login}
+
+校园网联网管理本机网络出口认证，底层使用外部 `auth_client`。
 
 ```bash
-chatecnu login-init
-chatecnu login --captcha ABCD -I
+ecnu net check --auth-client /usr/local/bin/auth_client --json
+ecnu net login --auth-client /usr/local/bin/auth_client -I
+ecnu net logout --auth-client /usr/local/bin/auth_client --username "$ECNU_USERNAME" -I
+ecnu net ensure-login --auth-client /usr/local/bin/auth_client -I
 ```
 
-## 会话和查询
+`check` 不需要密码。`login` 和门户登录共用 `ECNU_USERNAME` / `ECNU_PASSWORD`；`logout` 只需要用户名。默认不传 `-c`，只有配置 `--setting-file` 或 `ECNU_AUTH_SETTING_FILE` 时才使用设置文件。
+
+## 访客账号 {#visitor}
 
 ```bash
-chatecnu status
-chatecnu home
-chatecnu user-info
-chatecnu logout
-```
-
-调试用日志命令隐藏在 `debug` 下：
-
-```bash
-chatecnu debug auth-log --limit 10
-chatecnu debug detail-log --limit 10
-```
-
-## 校园网登录 {#network-login}
-
-ChatECNU 只包装外部 Linux `auth_client`，不随包分发该程序。
-
-检查在线状态，不需要密码：
-
-```bash
-chatecnu auth check   --auth-client /usr/local/bin/auth_client   --json
-```
-
-离线时再登录：
-
-```bash
-chatecnu auth ensure-login   --auth-client /usr/local/bin/auth_client   -I
-```
-
-默认不把密码放入进程参数。确需旧接口时，显式接受风险：
-
-```bash
-chatecnu auth ensure-login   --auth-client /usr/local/bin/auth_client   --allow-argv-password   -I
-```
-
-`ensure-login` 会先执行 `check`。默认不传 `-c`，只有配置 `--setting-file` 或 `ECNU_AUTH_SETTING_FILE` 时才使用设置文件。旧 `network-auth` 是隐藏兼容别名。
-
-## 访客账号
-
-```bash
-chatecnu visitor list
-chatecnu visitor get --id 10256703
-chatecnu visitor create --remark GuestA -I
-chatecnu visitor update --id 10256703 --remark GuestA --password 'Temp!235' -I
-chatecnu visitor delete --id 10256703 -I
-```
-
-默认访客账号：
-
-```bash
-chatecnu visitor default -I
+ecnu visitor list
+ecnu visitor get --id 10256703
+ecnu visitor create --remark GuestA --dry-run -I
+ecnu visitor default -I
 ```
 
 修改类命令支持 `--dry-run`。
-
-## 交互规则
-
-- `-i`：强制交互。
-- `-I`：禁止交互，缺参数就失败。
-- 脚本和 CI 推荐使用 `-I`。
-- 密码、Cookie、短信码和会话信息不要打印或提交。

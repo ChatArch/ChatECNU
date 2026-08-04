@@ -1,5 +1,5 @@
 site_name: ChatECNU 文档
-site_url: https://ChatArch.github.io/ChatECNU
+site_url: https://arch.gh.wzhecnu.cn/ChatECNU/
 repo_url: https://github.com/ChatArch/ChatECNU
 theme:
   name: material

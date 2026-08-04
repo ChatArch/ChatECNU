@@ -34,7 +34,7 @@ chatecnu = "chatecnu.config"
 [project.urls]
 Homepage = "https://github.com/ChatArch/ChatECNU"
 Repository = "https://github.com/ChatArch/ChatECNU"
-Documentation = "https://ChatArch.github.io/ChatECNU"
+Documentation = "https://arch.gh.wzhecnu.cn/ChatECNU/"
 
 [project.optional-dependencies]
 captcha = ["ddddocr", "numpy", "pillow"]

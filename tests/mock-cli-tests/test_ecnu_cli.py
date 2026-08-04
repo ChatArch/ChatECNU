@@ -114,15 +114,15 @@ def test_ecnu_mock_cli_runs_full_command_chain(monkeypatch, tmp_path):
     session_json = invoke_ok(runner, ["status", "--json"])
     assert session_json["cookies"]["PHPSESSID_8800"] == "***"
     assert invoke_ok(runner, ["cookie-header"]) == "PHPSESSID_8800=secret-cookie\n"
-    assert "Home summary" in invoke_ok(runner, ["home"])
+    assert "首页摘要" in invoke_ok(runner, ["home"])
     assert "账号: mock-user" in invoke_ok(runner, ["user-info"])
     assert "Authentication logs" in invoke_ok(runner, ["debug", "auth-log", "--limit", "1"])
     assert "Network detail logs" in invoke_ok(runner, ["debug", "detail-log", "--limit", "1"])
-    assert "Visitor accounts" in invoke_ok(runner, ["visitor", "list"])
+    assert "访客账号" in invoke_ok(runner, ["visitor", "list"])
     assert "visitor_id: 10256703" in invoke_ok(runner, ["visitor", "get", "--id", "10256703"])
     assert "account: mock-userm1" in invoke_ok(runner, ["visitor", "get", "--account", "mock-userm1"])
     created = invoke_ok(runner, ["visitor", "create", "--remark", "GuestB", "--dry-run", "-I"])
-    assert created == "Create visitor: dry run ready.\n"
+    assert created == "创建访客: 仅预览，未提交。\n"
     invoke_ok(
         runner,
         [

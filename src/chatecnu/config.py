@@ -12,15 +12,15 @@ class ECNUConfig(BaseEnvConfig):
     _aliases = ["ecnu", "chatecnu-ecnu"]
     _storage_dir = "ECNU"
 
-    ECNU_USERNAME = EnvField("ECNU_USERNAME", desc="ECNU username.")
-    ECNU_PASSWORD = EnvField("ECNU_PASSWORD", desc="ECNU password.", is_sensitive=True)
-    ECNU_COOKIE = EnvField("ECNU_COOKIE", desc="Authenticated ECNU portal Cookie header.", is_sensitive=True)
-    ECNU_BASE_URL = EnvField("ECNU_BASE_URL", default="https://login.ecnu.edu.cn:8800", desc="ECNU portal base URL.")
-    ECNU_VISITOR_PASSWORD1 = EnvField("ECNU_VISITOR_PASSWORD1", desc="Default password for visitor account suffix m1.", is_sensitive=True)
-    ECNU_VISITOR_PASSWORD2 = EnvField("ECNU_VISITOR_PASSWORD2", desc="Default password for visitor account suffix m2.", is_sensitive=True)
-    ECNU_VISITOR_REMARK = EnvField("ECNU_VISITOR_REMARK", default="default", desc="Default remark used by `chatecnu visitor default`.")
-    ECNU_AUTH_CLIENT = EnvField("ECNU_AUTH_CLIENT", default="auth_client", desc="auth_client path.")
-    ECNU_AUTH_SETTING_FILE = EnvField("ECNU_AUTH_SETTING_FILE", desc="auth_client setting file.")
+    ECNU_USERNAME = EnvField("ECNU_USERNAME", desc="ECNU 用户名。")
+    ECNU_PASSWORD = EnvField("ECNU_PASSWORD", desc="ECNU 密码。", is_sensitive=True)
+    ECNU_COOKIE = EnvField("ECNU_COOKIE", desc="ECNU 门户 Cookie。", is_sensitive=True)
+    ECNU_BASE_URL = EnvField("ECNU_BASE_URL", default="https://login.ecnu.edu.cn:8800", desc="ECNU 门户地址。")
+    ECNU_VISITOR_PASSWORD1 = EnvField("ECNU_VISITOR_PASSWORD1", desc="默认访客账号 m1 密码。", is_sensitive=True)
+    ECNU_VISITOR_PASSWORD2 = EnvField("ECNU_VISITOR_PASSWORD2", desc="默认访客账号 m2 密码。", is_sensitive=True)
+    ECNU_VISITOR_REMARK = EnvField("ECNU_VISITOR_REMARK", default="default", desc="默认访客账号备注。")
+    ECNU_AUTH_CLIENT = EnvField("ECNU_AUTH_CLIENT", default="auth_client", desc="auth_client 路径。")
+    ECNU_AUTH_SETTING_FILE = EnvField("ECNU_AUTH_SETTING_FILE", desc="auth_client 设置文件。")
 
     @classmethod
     def test(cls) -> None:

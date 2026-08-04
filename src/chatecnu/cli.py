@@ -6,7 +6,7 @@ from chatecnu import __version__
 from chatecnu.ecnu.cli import cli as main
 
 main = main
-main.help = "ECNU tools."
+main.help = "ECNU 工具。"
 main.version = __version__
 
 

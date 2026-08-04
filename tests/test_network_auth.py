@@ -37,7 +37,7 @@ def test_network_auth_login_refuses_argv_password_by_default():
     assert calls == []
     assert result.success is False
     assert result.returncode == ARGV_PASSWORD_DISABLED_RETURNCODE
-    assert "process argv" in result.stderr
+    assert "argv" in result.stderr
     assert "secret-value" not in result.stderr
     assert "secret-value" not in result.redacted_command
     assert result.redacted_command.endswith("-p <redacted> -c /etc/ecnu/auth_setting")

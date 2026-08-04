@@ -4,41 +4,43 @@
 
 ### Changed
 
-- Shorten the visible CLI to `chatecnu auth ...`; keep `network-auth` as a hidden compatibility alias.
+- 可见校园网命令缩短为 `chatecnu auth ...`，旧 `network-auth` 保留为隐藏兼容别名。
+- 按 ChatArch MkDocs 规范重组文档：补齐中英文后缀式站点、首页导航、快速开始、命令树、能力地图、接口树和公共域名预览链接。
+- 中文 README 和中文文档保持中文语境，英文内容移入 `.en.md` 文件。
 
 ## 0.1.1 - 2026-08-04
 
 ### Added
 
-- Add API-first ECNU campus-network `auth_client` wrapper in `chatecnu.network_auth`.
-- Add `chatecnu network-auth check`, `login`, and `ensure-login` CLI commands for Linux deployments that already provide the external `auth_client` binary; check does not require credentials and defaults to bare `auth_client check`, while login is fail-closed by default and requires explicit `--allow-argv-password` for the legacy `auth_client -p PASSWORD` path.
-- Treat `auth_client` error log output such as missing setting-file errors as structured command failures even when the external binary exits 0.
-- Add ChatEnv fields `ECNU_AUTH_CLIENT` and `ECNU_AUTH_SETTING_FILE`.
+- 新增 `chatecnu.network_auth`，提供 API 优先的 ECNU 校园网 `auth_client` 包装。
+- 新增 `chatecnu network-auth check`、`login`、`ensure-login`，用于已有外部 `auth_client` 的 Linux 部署；`check` 不需要凭据并默认执行裸 `auth_client check`，登录默认拒绝执行，只有显式 `--allow-argv-password` 才使用旧的 `auth_client -p PASSWORD` 路径。
+- 外部 `auth_client` 即使退出码为 0，只要输出缺设置文件等错误日志，也会转成结构化失败。
+- 新增 ChatEnv 字段 `ECNU_AUTH_CLIENT` 和 `ECNU_AUTH_SETTING_FILE`。
 
 ### Notes
 
-- ChatECNU does not vendor or redistribute the Linux-only `auth_client` binary; callers pass the runtime path explicitly or configure it through ChatEnv.
+- ChatECNU 不打包、不再分发 Linux-only `auth_client`；调用方通过参数或 ChatEnv 配置运行时路径。
 
 ## 0.1.0 - 2026-06-27
 
 ### Added
 
-- Initial ChatECNU release extracted from the former ChatNet ECNU application layer.
-- Add `chatecnu` CLI for ECNU self-service portal workflows:
-  - login/session status;
-  - home/user/log reads;
-  - visitor account list/get/create/update/delete/default sync;
-  - optional CAPTCHA-assisted login.
-- Add ChatEnv config provider entries for `ecnu` and `chatecnu`.
-- Add optional `captcha` extra for OCR-backed CAPTCHA automation.
-- Add ECNU docs, README, CI, docs preview, and tag-driven PyPI publishing workflow.
+- 从原 ChatNet ECNU 应用层拆出首个 ChatECNU 版本。
+- 新增 `chatecnu` CLI，覆盖 ECNU 门户流程：
+  - 登录和会话状态；
+  - 首页、用户信息和日志读取；
+  - 访客账号列表、查询、创建、更新、删除和默认账号维护；
+  - 可选验证码识别登录。
+- 新增 ChatEnv 配置 provider：`ecnu` 和 `chatecnu`。
+- 新增可选 `captcha` extra，用于 OCR 验证码自动化。
+- 新增 ECNU 文档、README、CI、文档预览和 tag 驱动 PyPI 发布流程。
 
 ### Changed
 
-- Depend on the released generic network foundation package: `ChatNet>=0.2.0,<0.3.0`.
-- Use `chatnet.portal` reusable browser/session/table helpers instead of keeping generic network code inside ChatECNU.
+- 依赖已发布的通用网络基础包：`ChatNet>=0.2.0,<0.3.0`。
+- 使用 `chatnet.portal` 的浏览器、会话和表格基础能力，不再在 ChatECNU 内保留通用网络代码。
 
 ### Notes
 
-- ChatECNU owns ECNU application-layer behavior. ChatNet owns generic network helpers.
-- The PyPI pending Trusted Publisher is configured for project `ChatECNU`, repo `ChatArch/ChatECNU`, workflow `publish.yml`, environment `(Any)`.
+- ChatECNU 负责 ECNU 应用层行为；ChatNet 负责通用网络基础能力。
+- PyPI Trusted Publisher 已配置到项目 `ChatECNU`、仓库 `ChatArch/ChatECNU`、工作流 `publish.yml`。

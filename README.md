@@ -1,44 +1,59 @@
 # ChatECNU
 
-ChatECNU is the ChatArch ECNU campus portal and campus-network automation package extracted from ChatNet.
+ChatECNU 是 ChatArch 的 ECNU 门户和校园网自动化包。它负责 ECNU 登录、会话、首页、用户信息、访客账号，以及外部 Linux `auth_client` 的安全包装。通用网络能力归 ChatNet。
 
-It owns ECNU application-layer behavior: login/session handling, home/user/log reads, visitor account operations, ECNU ChatEnv schema, optional CAPTCHA automation, and a fail-closed wrapper around the external ECNU campus-network `auth_client` binary. Generic browser/session/table helpers are imported from `ChatNet`.
+文档：https://arch.gh.wzhecnu.cn/ChatECNU/
 
-## Quick start
+英文版见 [README.en.md](README.en.md)。
+
+## 文档入口
+
+| 场景 | 入口 |
+| --- | --- |
+| 安装和最小验证 | https://arch.gh.wzhecnu.cn/ChatECNU/quickstart/ |
+| 查看命令面 | https://arch.gh.wzhecnu.cn/ChatECNU/cli-tree/ |
+| 判断包能力边界 | https://arch.gh.wzhecnu.cn/ChatECNU/capability-map/ |
+| 查看 Python 与命令行接口 | https://arch.gh.wzhecnu.cn/ChatECNU/interface-tree/ |
+| 门户、访客账号、校园网登录 | https://arch.gh.wzhecnu.cn/ChatECNU/ecnu/ |
+
+## 快速开始
 
 ```bash
-pip install -e ".[dev]"
+pip install -e ".[dev,docs]"
 chatecnu --help
 python -m pytest -q
 ```
 
-Optional CAPTCHA automation:
+可选验证码识别：
 
 ```bash
 pip install -e ".[captcha]"
 chatecnu login --username "$ECNU_USERNAME" -i
 ```
 
-Network login:
+## 常用命令
 
 ```bash
-# Check status; no password needed.
-chatecnu auth check \
-  --auth-client /usr/local/bin/auth_client \
-  --json
-
-# Use env/ChatEnv or -i. Default login is fail-closed.
-chatecnu auth ensure-login \
-  --auth-client /usr/local/bin/auth_client \
-  -I
-
-# Legacy opt-in after accepting argv exposure:
-chatecnu auth ensure-login \
-  --auth-client /usr/local/bin/auth_client \
-  --allow-argv-password \
-  -I
+chatecnu status
+chatecnu login -I
+chatecnu home
+chatecnu user-info
+chatecnu visitor --help
 ```
 
-ChatECNU does not vendor the Linux-only `auth_client`. Pass `--auth-client` or set `ECNU_AUTH_CLIENT`. Set `ECNU_AUTH_SETTING_FILE` only when needed; otherwise checks use bare `auth_client check`. Login refuses argv passwords unless `--allow-argv-password` / `allow_argv_password=True` is set. Old `network-auth` still works as a hidden alias for `auth`.
+校园网登录包装：
 
-Sensitive values such as passwords, cookies, SMS codes, and session tokens must not be printed or committed.
+```bash
+# 查状态，不需要密码。
+chatecnu auth check --auth-client /usr/local/bin/auth_client --json
+
+# 凭据来自环境变量、ChatEnv 或交互输入；默认不把密码传给 auth_client。
+chatecnu auth ensure-login --auth-client /usr/local/bin/auth_client -I
+
+# 明确接受 argv 暴露风险后才启用旧接口。
+chatecnu auth ensure-login --auth-client /usr/local/bin/auth_client --allow-argv-password -I
+```
+
+ChatECNU 不打包 `auth_client`。请用 `--auth-client` 或 `ECNU_AUTH_CLIENT` 指定路径。旧命令 `network-auth` 仍作为隐藏兼容别名可用。
+
+敏感值（密码、Cookie、短信码、会话）不要打印或提交。

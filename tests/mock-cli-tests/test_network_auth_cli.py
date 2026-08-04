@@ -55,7 +55,7 @@ def test_auth_is_short_visible_command_and_network_auth_is_hidden_alias():
     help_result = CliRunner().invoke(main, ["--help"])
     assert help_result.exit_code == 0, help_result.output
     assert "  auth" in help_result.output
-    assert "Network login." in help_result.output
+    assert "校园网登录。" in help_result.output
     assert "network-auth" not in help_result.output
 
     alias_result = CliRunner().invoke(main, ["network-auth", "--help"])
@@ -235,7 +235,7 @@ def test_network_auth_cli_refuses_argv_password_by_default_without_spawning():
     payload = json.loads(result.output)
     assert payload["success"] is False
     assert payload["returncode"] == 126
-    assert "process argv" in payload["stderr"]
+    assert "argv" in payload["stderr"]
     assert payload["redacted_command"].endswith("-p <redacted> -c auth_setting")
 
 

@@ -1,15 +1,15 @@
-# ECNU 使用
+# ECNU Usage
 
-## 配置
+## Configuration
 
-ChatECNU 读取 ChatEnv 的 `ecnu` 配置，也支持命令行参数覆盖。
+ChatECNU reads the ChatEnv `ecnu` config type and accepts CLI overrides.
 
 ```bash
 chatenv test -t ecnu
 chatenv cat -t ecnu
 ```
 
-常用字段：
+Common fields:
 
 ```text
 ECNU_USERNAME
@@ -20,7 +20,7 @@ ECNU_AUTH_CLIENT
 ECNU_AUTH_SETTING_FILE
 ```
 
-如需多配置：
+For multiple profiles:
 
 ```bash
 chatenv save work -t ecnu
@@ -28,26 +28,26 @@ chatenv use work -t ecnu
 chatecnu -e work status
 ```
 
-## 门户登录
+## Portal login
 
 ```bash
 chatecnu login --rounds 3 --topk 5 -I
 ```
 
-需要短信码时：
+With an SMS code:
 
 ```bash
 chatecnu login --sms-code 123456 --rounds 3 --topk 5 -I
 ```
 
-自动验证码不可用时，可先下载验证码再手动提交：
+When automatic CAPTCHA solving is not available:
 
 ```bash
 chatecnu login-init
 chatecnu login --captcha ABCD -I
 ```
 
-## 会话和查询
+## Session and reads
 
 ```bash
 chatecnu status
@@ -56,38 +56,38 @@ chatecnu user-info
 chatecnu logout
 ```
 
-调试用日志命令隐藏在 `debug` 下：
+Debug log commands are hidden under `debug`:
 
 ```bash
 chatecnu debug auth-log --limit 10
 chatecnu debug detail-log --limit 10
 ```
 
-## 校园网登录 {#network-login}
+## Network login
 
-ChatECNU 只包装外部 Linux `auth_client`，不随包分发该程序。
+ChatECNU wraps an external Linux `auth_client` binary and does not bundle it.
 
-检查在线状态，不需要密码：
+Check online state without a password:
 
 ```bash
 chatecnu auth check   --auth-client /usr/local/bin/auth_client   --json
 ```
 
-离线时再登录：
+Log in only when offline:
 
 ```bash
 chatecnu auth ensure-login   --auth-client /usr/local/bin/auth_client   -I
 ```
 
-默认不把密码放入进程参数。确需旧接口时，显式接受风险：
+ChatECNU refuses argv passwords by default. Enable the legacy path only after accepting the local exposure risk:
 
 ```bash
 chatecnu auth ensure-login   --auth-client /usr/local/bin/auth_client   --allow-argv-password   -I
 ```
 
-`ensure-login` 会先执行 `check`。默认不传 `-c`，只有配置 `--setting-file` 或 `ECNU_AUTH_SETTING_FILE` 时才使用设置文件。旧 `network-auth` 是隐藏兼容别名。
+`ensure-login` runs `check` first. No `-c` setting file is passed unless `--setting-file` or `ECNU_AUTH_SETTING_FILE` is set. The old `network-auth` command remains as a hidden compatibility alias.
 
-## 访客账号
+## Visitor accounts
 
 ```bash
 chatecnu visitor list
@@ -97,17 +97,17 @@ chatecnu visitor update --id 10256703 --remark GuestA --password 'Temp!235' -I
 chatecnu visitor delete --id 10256703 -I
 ```
 
-默认访客账号：
+Default visitor accounts:
 
 ```bash
 chatecnu visitor default -I
 ```
 
-修改类命令支持 `--dry-run`。
+Mutation commands support `--dry-run`.
 
-## 交互规则
+## Interaction rules
 
-- `-i`：强制交互。
-- `-I`：禁止交互，缺参数就失败。
-- 脚本和 CI 推荐使用 `-I`。
-- 密码、Cookie、短信码和会话信息不要打印或提交。
+- `-i`: force prompts.
+- `-I`: disable prompts and fail fast when input is missing.
+- Use `-I` in scripts and CI.
+- Do not print or commit passwords, cookies, SMS codes, or sessions.

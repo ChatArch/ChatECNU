@@ -25,12 +25,7 @@ AUTH_CLIENT_ERROR_MARKERS = (
     "can not open auth setting file",
 )
 ARGV_PASSWORD_DISABLED_RETURNCODE = 126
-ARGV_PASSWORD_DISABLED_MESSAGE = (
-    "Refusing to pass ECNU password through auth_client process argv. "
-    "The upstream auth_client binary appears to support only '-p PASSWORD'; "
-    "use CLI --allow-argv-password or the API allow_argv_password opt-in "
-    "only after accepting local process-list exposure."
-)
+ARGV_PASSWORD_DISABLED_MESSAGE = "默认拒绝通过 auth_client argv 传密码；接受本机进程列表暴露风险后再使用 --allow-argv-password。"
 
 
 class CompletedProcessLike(Protocol):

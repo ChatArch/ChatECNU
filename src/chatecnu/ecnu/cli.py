@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any, Callable
@@ -14,6 +15,13 @@ from chatenv.paths import get_paths
 
 from chatecnu import __version__
 from chatecnu.config import ECNUConfig
+from chatecnu.network_auth import (
+    DEFAULT_SETTING_FILE,
+    NetworkAuthClient,
+    NetworkAuthCredentials,
+    NetworkAuthResult,
+    redact_text,
+)
 from .portal import BASE_URL
 
 LOGIN_SCHEMA = CommandSchema(
@@ -36,6 +44,14 @@ LOGIN_AUTO_SCHEMA = CommandSchema(
 VISITOR_CREATE_SCHEMA = CommandSchema(
     name="ecnu-visitor-create",
     fields=(CommandField("remark", prompt="visitor remark", required=True),),
+)
+
+NETWORK_AUTH_LOGIN_SCHEMA = CommandSchema(
+    name="ecnu-network-auth-login",
+    fields=(
+        CommandField("username", prompt="ECNU username", required=True),
+        CommandField("password", prompt="ECNU password", required=True, sensitive=True),
+    ),
 )
 
 VISITOR_UPDATE_SCHEMA = CommandSchema(
@@ -99,6 +115,8 @@ def cli(
         "state_file": Path(state_file).expanduser() if state_file else default_state_file(),
         "cookie": cookie or ECNUConfig.ECNU_COOKIE.value,
         "timeout": timeout,
+        "env_profile": env_profile,
+        "env_file": env_file,
     }
 
 
@@ -353,6 +371,93 @@ def detail_log_alias(ctx: click.Context, start: str | None, end: str | None, lim
     )
 
 
+@cli.group(name="network-auth")
+def network_auth_group() -> None:
+    """ECNU campus-network auth_client wrapper."""
+
+
+@network_auth_group.command(name="login")
+@click.option("--auth-client", "auth_client_path", default=None, help="Path to auth_client, or set ECNU_AUTH_CLIENT.")
+@click.option("--setting-file", default=None, help="auth_client setting file, or set ECNU_AUTH_SETTING_FILE.")
+@click.option("--username", default=None, help="ECNU username, or set ECNU_USERNAME.")
+@click.option("--password", default=None, help="ECNU password, or set ECNU_PASSWORD.")
+@click.option(
+    "--allow-argv-password",
+    is_flag=True,
+    help="Unsafe: pass password to the external auth_client argv; exposes it to local process listing.",
+)
+@click.option("--json", "json_output", is_flag=True, help="Print raw JSON instead of a human summary.")
+@add_interactive_option
+@click.pass_context
+def network_auth_login(
+    ctx: click.Context,
+    auth_client_path: str | None,
+    setting_file: str | None,
+    username: str | None,
+    password: str | None,
+    allow_argv_password: bool,
+    json_output: bool,
+    interactive: bool | None,
+) -> None:
+    """Login to the ECNU campus network through the external auth_client."""
+
+    prefer_loaded_chatenv = network_auth_prefers_loaded_chatenv(ctx)
+    credentials = resolve_network_auth_credentials(
+        username=username,
+        password=password,
+        interactive=interactive,
+        prefer_loaded_chatenv=prefer_loaded_chatenv,
+    )
+    result = make_network_auth_client(
+        auth_client_path=auth_client_path,
+        setting_file=setting_file,
+        allow_argv_password=allow_argv_password,
+        prefer_loaded_chatenv=prefer_loaded_chatenv,
+    ).login(credentials)
+    emit_network_auth_result(result, json_output=json_output, secret_values=(credentials.password,))
+
+
+@network_auth_group.command(name="ensure-login")
+@click.option("--auth-client", "auth_client_path", default=None, help="Path to auth_client, or set ECNU_AUTH_CLIENT.")
+@click.option("--setting-file", default=None, help="auth_client setting file, or set ECNU_AUTH_SETTING_FILE.")
+@click.option("--username", default=None, help="ECNU username, or set ECNU_USERNAME.")
+@click.option("--password", default=None, help="ECNU password, or set ECNU_PASSWORD.")
+@click.option(
+    "--allow-argv-password",
+    is_flag=True,
+    help="Unsafe: pass password to the external auth_client argv; exposes it to local process listing.",
+)
+@click.option("--json", "json_output", is_flag=True, help="Print raw JSON instead of a human summary.")
+@add_interactive_option
+@click.pass_context
+def network_auth_ensure_login(
+    ctx: click.Context,
+    auth_client_path: str | None,
+    setting_file: str | None,
+    username: str | None,
+    password: str | None,
+    allow_argv_password: bool,
+    json_output: bool,
+    interactive: bool | None,
+) -> None:
+    """Check the campus-network session and login only when offline."""
+
+    prefer_loaded_chatenv = network_auth_prefers_loaded_chatenv(ctx)
+    credentials = resolve_network_auth_credentials(
+        username=username,
+        password=password,
+        interactive=interactive,
+        prefer_loaded_chatenv=prefer_loaded_chatenv,
+    )
+    result = make_network_auth_client(
+        auth_client_path=auth_client_path,
+        setting_file=setting_file,
+        allow_argv_password=allow_argv_password,
+        prefer_loaded_chatenv=prefer_loaded_chatenv,
+    ).ensure_login(credentials)
+    emit_network_auth_result(result, json_output=json_output, secret_values=(credentials.password,))
+
+
 @cli.group(name="visitor")
 def visitor_group() -> None:
     """Visitor account management."""
@@ -542,6 +647,104 @@ def visitor_lock(
         json_output=json_output,
         action="Lock visitor",
     )
+
+
+def make_network_auth_client(
+    *,
+    auth_client_path: str | None,
+    setting_file: str | None,
+    allow_argv_password: bool = False,
+    prefer_loaded_chatenv: bool = False,
+) -> NetworkAuthClient:
+    resolved_auth_client = auth_client_path or resolve_ecnu_config_value(
+        "ECNU_AUTH_CLIENT",
+        ECNUConfig.ECNU_AUTH_CLIENT,
+        prefer_loaded_chatenv=prefer_loaded_chatenv,
+    ) or "auth_client"
+    resolved_setting_file = setting_file or resolve_ecnu_config_value(
+        "ECNU_AUTH_SETTING_FILE",
+        ECNUConfig.ECNU_AUTH_SETTING_FILE,
+        prefer_loaded_chatenv=prefer_loaded_chatenv,
+    ) or DEFAULT_SETTING_FILE
+    return NetworkAuthClient(
+        auth_client_path=resolved_auth_client,
+        setting_file=resolved_setting_file,
+        allow_argv_password=allow_argv_password,
+    )
+
+
+def resolve_network_auth_credentials(
+    *,
+    username: str | None,
+    password: str | None,
+    interactive: bool | None,
+    prefer_loaded_chatenv: bool = False,
+) -> NetworkAuthCredentials:
+    values = resolve_command_inputs(
+        schema=NETWORK_AUTH_LOGIN_SCHEMA,
+        provided={
+            "username": username
+            or resolve_ecnu_config_value(
+                "ECNU_USERNAME",
+                ECNUConfig.ECNU_USERNAME,
+                prefer_loaded_chatenv=prefer_loaded_chatenv,
+            ),
+            "password": password
+            or resolve_ecnu_config_value(
+                "ECNU_PASSWORD",
+                ECNUConfig.ECNU_PASSWORD,
+                prefer_loaded_chatenv=prefer_loaded_chatenv,
+            ),
+        },
+        interactive=interactive,
+        usage="Usage: chatecnu network-auth login --username USER --password PASSWORD [-i|-I]",
+    )
+    return NetworkAuthCredentials(username=values["username"], password=values["password"])
+
+
+def network_auth_prefers_loaded_chatenv(ctx: click.Context) -> bool:
+    config = ctx.find_root().obj or ctx.obj or {}
+    return bool(config.get("env_profile") or config.get("env_file"))
+
+
+def resolve_ecnu_config_value(env_key: str, field: Any, *, prefer_loaded_chatenv: bool = False) -> str | None:
+    loaded_value = field.value or field.default
+    process_value = os.environ.get(env_key)
+    if prefer_loaded_chatenv:
+        return loaded_value or process_value
+    return process_value or loaded_value
+
+
+def emit_network_auth_result(
+    result: NetworkAuthResult,
+    *,
+    json_output: bool,
+    secret_values: tuple[str, ...] = (),
+) -> None:
+    payload = redact_network_auth_payload(result.to_dict(), secret_values=secret_values)
+    if json_output:
+        echo_json(redact_sensitive(payload))
+    else:
+        click.echo(format_network_auth_result(result))
+    if not result.success:
+        raise click.exceptions.Exit(1)
+
+
+def redact_network_auth_payload(payload: dict[str, object], *, secret_values: tuple[str, ...]) -> dict[str, object]:
+    """Redact resolved secret values from JSON payload strings."""
+
+    return {
+        key: redact_text(value, secret_values) if isinstance(value, str) else value
+        for key, value in payload.items()
+    }
+
+
+def format_network_auth_result(result: NetworkAuthResult) -> str:
+    if result.action == "ensure-login" and result.skipped:
+        return "Campus-network session already online; login skipped."
+    if result.success:
+        return "Campus-network login succeeded." if result.action in {"login", "ensure-login"} else "Campus-network auth_client command succeeded."
+    return "Campus-network auth_client command failed."
 
 
 def make_client(ctx: click.Context) -> Any:

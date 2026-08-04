@@ -39,8 +39,7 @@ jobs:
             const { payload, repo } = context;
             const marker = '<!-- chatarch-pages-preview -->';
             const previewLink = `https://arch.gh.wzhecnu.cn/${repo.repo}/dev/`;
-            const body = `${marker}
-Preview available at: ${previewLink}`;
+            const body = `${marker}\nPreview available at: ${previewLink}`;
             const comments = await github.rest.issues.listComments({
               owner: repo.owner,
               repo: repo.repo,

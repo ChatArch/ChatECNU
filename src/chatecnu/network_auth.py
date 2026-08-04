@@ -18,7 +18,12 @@ from typing import Callable, Protocol, Sequence
 
 MSG_TIMEOUT = "context deadline exceeded (Client.Timeout exceeded while awaiting headers)"
 NOT_ONLINE_BUG = "Account not_online_error is online."
-DEFAULT_SETTING_FILE = "auth_setting"
+DEFAULT_SETTING_FILE: str | None = None
+AUTH_CLIENT_ERROR_MARKERS = (
+    "level=error",
+    "level=fatal",
+    "can not open auth setting file",
+)
 ARGV_PASSWORD_DISABLED_RETURNCODE = 126
 ARGV_PASSWORD_DISABLED_MESSAGE = (
     "Refusing to pass ECNU password through auth_client process argv. "
@@ -138,8 +143,10 @@ class NetworkAuthClient:
         argv.append("check")
         completed = self._run(argv)
         stdout = completed.stdout or ""
+        stderr = completed.stderr or ""
         online = is_online_output(stdout)
-        return self._result("check", argv, completed, success=completed.returncode == 0, online=online)
+        success = completed.returncode == 0 and not has_auth_client_error(stdout, stderr)
+        return self._result("check", argv, completed, success=success, online=online)
 
     def ensure_login(self, credentials: NetworkAuthCredentials) -> NetworkAuthResult:
         """Login only when ``auth_client check`` says the network session is offline."""
@@ -259,6 +266,13 @@ def is_online_output(output: str) -> bool:
     return "is online" in output
 
 
+def has_auth_client_error(stdout: str, stderr: str) -> bool:
+    """Return whether auth_client logged an error despite a zero return code."""
+
+    combined = f"{stdout}\n{stderr}".lower()
+    return any(marker in combined for marker in AUTH_CLIENT_ERROR_MARKERS)
+
+
 def redact_command(argv: Sequence[str]) -> str:
     """Return a shell-display string with ``-p`` argument redacted."""
 
@@ -288,12 +302,14 @@ def redact_text(text: str, secret_values: Sequence[str]) -> str:
 __all__ = [
     "ARGV_PASSWORD_DISABLED_MESSAGE",
     "ARGV_PASSWORD_DISABLED_RETURNCODE",
+    "AUTH_CLIENT_ERROR_MARKERS",
     "DEFAULT_SETTING_FILE",
     "MSG_TIMEOUT",
     "NOT_ONLINE_BUG",
     "NetworkAuthClient",
     "NetworkAuthCredentials",
     "NetworkAuthResult",
+    "has_auth_client_error",
     "is_online_output",
     "redact_command",
     "redact_text",

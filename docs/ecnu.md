@@ -161,6 +161,14 @@ chatecnu logout
 
 ECNU 校园网认证使用信息办提供的 Linux `auth_client` 二进制。ChatECNU 不打包或重新分发这个二进制，只提供 API-first 的 fail-closed wrapper：默认不会把密码交给 `auth_client -p PASSWORD`，避免静默暴露到本机进程列表。
 
+查看当前 `auth_client` 登录状态不需要密码：
+
+```bash
+chatecnu network-auth check \
+  --auth-client /usr/local/bin/auth_client \
+  --json
+```
+
 用于替代定时 shell 脚本时，优先使用 `ensure-login`：
 
 ```bash
@@ -168,7 +176,6 @@ ECNU 校园网认证使用信息办提供的 Linux `auth_client` 二进制。Cha
 # 默认路径只会安全地执行 check；如果离线且需要登录，会结构化失败并提示 legacy 风险。
 chatecnu network-auth ensure-login \
   --auth-client /usr/local/bin/auth_client \
-  --setting-file auth_setting \
   -I
 ```
 
@@ -177,18 +184,20 @@ chatecnu network-auth ensure-login \
 ```bash
 chatecnu network-auth ensure-login \
   --auth-client /usr/local/bin/auth_client \
-  --setting-file auth_setting \
   --allow-argv-password \
   -I
 ```
 
-`ensure-login` 会先调用 `auth_client check`；如果 check 成功且已经在线，会跳过登录；如果离线，再进入登录路径。所有 subprocess 调用都使用 argv list + `shell=False`，CLI/API 输出中的命令、stdout、stderr 都会 redacted runtime password。默认 credential 解析顺序是显式 CLI 参数 → 当前 process env → active ChatEnv；如果显式使用 `-e/--env-file`，则该 profile/env-file 优先。
+`ensure-login` 会先调用 `auth_client check`；如果 check 成功且已经在线，会跳过登录；如果离线，再进入登录路径。默认不传 `-c`，保持和 Precision 旧脚本一致；只有配置了 `--setting-file` / `ECNU_AUTH_SETTING_FILE` 时才传 setting file。所有 subprocess 调用都使用 argv list + `shell=False`，CLI/API 输出中的命令、stdout、stderr 都会 redacted runtime password。默认 credential 解析顺序是显式 CLI 参数 → 当前 process env → active ChatEnv；如果显式使用 `-e/--env-file`，则该 profile/env-file 优先。
 
 如果固定部署路径，可写入 ChatEnv：
 
 ```bash
 ECNU_AUTH_CLIENT='/usr/local/bin/auth_client'
-ECNU_AUTH_SETTING_FILE='auth_setting'
+ECNU_USERNAME='<your-ecnu-id>'
+ECNU_PASSWORD='<your-ecnu-password>'
+# Optional, only if this deployment uses a setting file:
+# ECNU_AUTH_SETTING_FILE='auth_setting'
 ```
 
 ## 6. 查询

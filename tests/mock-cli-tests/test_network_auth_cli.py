@@ -37,6 +37,48 @@ class FakeNetworkAuthClient:
             skipped=True,
         )
 
+    def check(self):
+        self.calls.append(("check", None))
+        return NetworkAuthResult(
+            action="check",
+            success=True,
+            returncode=0,
+            stdout="Account student is online.\n",
+            stderr="",
+            redacted_command="/opt/ecnu/auth_client -c auth_setting check",
+            online=True,
+            skipped=False,
+        )
+
+
+def test_network_auth_check_cli_delegates_to_api_without_requiring_password(monkeypatch):
+    fake = FakeNetworkAuthClient()
+    monkeypatch.setattr(
+        ecnu_cli,
+        "make_network_auth_client",
+        lambda *, auth_client_path, setting_file, allow_argv_password=False, prefer_loaded_chatenv=False: fake,
+    )
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "network-auth",
+            "check",
+            "--auth-client",
+            "/opt/ecnu/auth_client",
+            "--setting-file",
+            "auth_setting",
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["action"] == "check"
+    assert payload["success"] is True
+    assert payload["online"] is True
+    assert fake.calls == [("check", None)]
+
 
 def test_network_auth_login_cli_delegates_to_api_without_printing_password(monkeypatch):
     fake = FakeNetworkAuthClient()

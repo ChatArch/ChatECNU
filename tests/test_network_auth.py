@@ -105,6 +105,38 @@ def test_network_auth_redacts_password_echoed_by_auth_client_output():
     assert "<redacted>" in result.stderr
 
 
+def test_network_auth_check_omits_setting_file_by_default():
+    calls: list[list[str]] = []
+
+    def runner(argv, **kwargs):
+        calls.append(list(argv))
+        return FakeCompletedProcess(list(argv), stdout="Account 20260001 is online.\n")
+
+    client = NetworkAuthClient(auth_client_path="/opt/ecnu/auth_client", runner=runner)
+    result = client.check()
+
+    assert result.success is True
+    assert result.online is True
+    assert calls == [["/opt/ecnu/auth_client", "check"]]
+
+
+def test_network_auth_check_treats_auth_client_error_log_as_failure():
+    def runner(argv, **kwargs):
+        return FakeCompletedProcess(
+            list(argv),
+            returncode=0,
+            stderr='time="2026-08-04T15:24:47+08:00" level=error msg="Can not open auth setting file auth_setting"',
+        )
+
+    client = NetworkAuthClient(auth_client_path="/opt/ecnu/auth_client", setting_file="auth_setting", runner=runner)
+    result = client.check()
+
+    assert result.success is False
+    assert result.returncode == 0
+    assert result.online is False
+    assert "auth_setting" in result.stderr
+
+
 def test_network_auth_output_parser_handles_known_offline_and_timeout_cases():
     assert is_online_output("Account 20260001 is online.") is True
     assert is_online_output("Account not_online_error is online.") is False

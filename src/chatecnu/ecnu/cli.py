@@ -376,6 +376,28 @@ def network_auth_group() -> None:
     """ECNU campus-network auth_client wrapper."""
 
 
+@network_auth_group.command(name="check")
+@click.option("--auth-client", "auth_client_path", default=None, help="Path to auth_client, or set ECNU_AUTH_CLIENT.")
+@click.option("--setting-file", default=None, help="auth_client setting file, or set ECNU_AUTH_SETTING_FILE.")
+@click.option("--json", "json_output", is_flag=True, help="Print raw JSON instead of a human summary.")
+@click.pass_context
+def network_auth_check(
+    ctx: click.Context,
+    auth_client_path: str | None,
+    setting_file: str | None,
+    json_output: bool,
+) -> None:
+    """Check the current ECNU campus-network auth_client login status."""
+
+    prefer_loaded_chatenv = network_auth_prefers_loaded_chatenv(ctx)
+    result = make_network_auth_client(
+        auth_client_path=auth_client_path,
+        setting_file=setting_file,
+        prefer_loaded_chatenv=prefer_loaded_chatenv,
+    ).check()
+    emit_network_auth_result(result, json_output=json_output)
+
+
 @network_auth_group.command(name="login")
 @click.option("--auth-client", "auth_client_path", default=None, help="Path to auth_client, or set ECNU_AUTH_CLIENT.")
 @click.option("--setting-file", default=None, help="auth_client setting file, or set ECNU_AUTH_SETTING_FILE.")

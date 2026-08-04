@@ -1,38 +1,24 @@
 # Changelog
 
-## 0.1.1 - 2026-08-04
-
-### Added
-
-- Add API-first ECNU campus-network `auth_client` wrapper in `chatecnu.network_auth`.
-- Add `chatecnu network-auth check`, `login`, and `ensure-login` CLI commands for Linux deployments that already provide the external `auth_client` binary; check does not require credentials and defaults to bare `auth_client check`, while login is fail-closed by default and requires explicit `--allow-argv-password` for the legacy `auth_client -p PASSWORD` path.
-- Treat `auth_client` error log output such as missing setting-file errors as structured command failures even when the external binary exits 0.
-- Add ChatEnv fields `ECNU_AUTH_CLIENT` and `ECNU_AUTH_SETTING_FILE`.
-
-### Notes
-
-- ChatECNU does not vendor or redistribute the Linux-only `auth_client` binary; callers pass the runtime path explicitly or configure it through ChatEnv.
-
-## 0.1.0 - 2026-06-27
-
-### Added
-
-- Initial ChatECNU release extracted from the former ChatNet ECNU application layer.
-- Add `chatecnu` CLI for ECNU self-service portal workflows:
-  - login/session status;
-  - home/user/log reads;
-  - visitor account list/get/create/update/delete/default sync;
-  - optional CAPTCHA-assisted login.
-- Add ChatEnv config provider entries for `ecnu` and `chatecnu`.
-- Add optional `captcha` extra for OCR-backed CAPTCHA automation.
-- Add ECNU docs, README, CI, docs preview, and tag-driven PyPI publishing workflow.
+## 0.2.0
 
 ### Changed
 
-- Depend on the released generic network foundation package: `ChatNet>=0.2.0,<0.3.0`.
-- Use `chatnet.portal` reusable browser/session/table helpers instead of keeping generic network code inside ChatECNU.
+- 命令面重整为三组：`ecnu home ...`、`ecnu net ...`、`ecnu visitor ...`。
+- 门户相关动作从顶层移入 `home`：`home login/info/status/user/logout`。
+- 校园网联网只保留 `net`：`net check/login/logout/ensure-login`；不再注册 `auth` 或 `network-auth`。
+- ChatEnv 对外类型收敛为 `ecnu`；门户和校园网共用 `ECNU_USERNAME` / `ECNU_PASSWORD`。
+- 文档和命令树同步改为新结构。
 
-### Notes
+## 0.1.1
 
-- ChatECNU owns ECNU application-layer behavior. ChatNet owns generic network helpers.
-- The PyPI pending Trusted Publisher is configured for project `ChatECNU`, repo `ChatArch/ChatECNU`, workflow `publish.yml`, environment `(Any)`.
+### Added
+
+- 新增 `chatecnu.network_auth`，提供 API 优先的 ECNU 校园网 `auth_client` 包装。
+- 新增校园网检查、登录、退出和离线再登录能力；`check` 不需要凭据，`logout` 只需要用户名，登录默认拒绝执行，只有显式 `--allow-argv-password` 才使用旧的 `auth_client -p PASSWORD` 路径。
+- 外部 `auth_client` 即使退出码为 0，只要输出缺设置文件等错误日志，也会转成结构化失败。
+- 新增 ChatEnv 字段 `ECNU_AUTH_CLIENT` 和 `ECNU_AUTH_SETTING_FILE`；门户和校园网共用 `ECNU_USERNAME` / `ECNU_PASSWORD`。
+
+## 0.1.0
+
+- Initial package release.

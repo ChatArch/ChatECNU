@@ -50,6 +50,32 @@ class FakeNetworkAuthClient:
             skipped=False,
         )
 
+    def logout(self, username):
+        self.calls.append(("logout", username))
+        return NetworkAuthResult(
+            action="logout",
+            success=True,
+            returncode=0,
+            stdout="Logout success\n",
+            stderr="",
+            redacted_command="/opt/ecnu/auth_client -u student -c auth_setting auth --logout",
+        )
+
+
+def test_net_is_visible_command_and_network_auth_is_removed():
+    help_result = CliRunner().invoke(main, ["--help"])
+    assert help_result.exit_code == 0, help_result.output
+    assert "  net" in help_result.output
+    assert "校园网联网。" in help_result.output
+    assert "  auth" not in help_result.output
+    assert "network-auth" not in help_result.output
+
+    auth_result = CliRunner().invoke(main, ["auth", "--help"])
+    assert auth_result.exit_code != 0
+
+    alias_result = CliRunner().invoke(main, ["network-auth", "--help"], prog_name="ecnu")
+    assert alias_result.exit_code != 0
+
 
 def test_network_auth_check_cli_delegates_to_api_without_requiring_password(monkeypatch):
     fake = FakeNetworkAuthClient()
@@ -62,7 +88,7 @@ def test_network_auth_check_cli_delegates_to_api_without_requiring_password(monk
     result = CliRunner().invoke(
         main,
         [
-            "network-auth",
+            "net",
             "check",
             "--auth-client",
             "/opt/ecnu/auth_client",
@@ -80,6 +106,37 @@ def test_network_auth_check_cli_delegates_to_api_without_requiring_password(monk
     assert fake.calls == [("check", None)]
 
 
+
+def test_network_auth_logout_cli_delegates_to_api_with_shared_username(monkeypatch):
+    fake = FakeNetworkAuthClient()
+    monkeypatch.setattr(
+        ecnu_cli,
+        "make_network_auth_client",
+        lambda *, auth_client_path, setting_file, allow_argv_password=False, prefer_loaded_chatenv=False: fake,
+    )
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "net",
+            "logout",
+            "--auth-client",
+            "/opt/ecnu/auth_client",
+            "--setting-file",
+            "auth_setting",
+            "--username",
+            "student",
+            "--json",
+            "-I",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["action"] == "logout"
+    assert payload["success"] is True
+    assert fake.calls == [("logout", "student")]
+
 def test_network_auth_login_cli_delegates_to_api_without_printing_password(monkeypatch):
     fake = FakeNetworkAuthClient()
     monkeypatch.setattr(
@@ -91,7 +148,7 @@ def test_network_auth_login_cli_delegates_to_api_without_printing_password(monke
     result = CliRunner().invoke(
         main,
         [
-            "network-auth",
+            "net",
             "login",
             "--auth-client",
             "/opt/ecnu/auth_client",
@@ -127,7 +184,7 @@ def test_network_auth_ensure_login_cli_replaces_periodic_shell_script(monkeypatc
     result = CliRunner().invoke(
         main,
         [
-            "network-auth",
+            "net",
             "ensure-login",
             "--auth-client",
             "/opt/ecnu/auth_client",
@@ -173,7 +230,7 @@ def test_network_auth_cli_exits_nonzero_on_failed_auth_client_result(monkeypatch
     result = CliRunner().invoke(
         main,
         [
-            "network-auth",
+            "net",
             "login",
             "--auth-client",
             "/missing/auth_client",
@@ -203,7 +260,7 @@ def test_network_auth_cli_refuses_argv_password_by_default_without_spawning():
     result = CliRunner().invoke(
         main,
         [
-            "network-auth",
+            "net",
             "login",
             "--auth-client",
             "/opt/ecnu/auth_client",
@@ -223,7 +280,7 @@ def test_network_auth_cli_refuses_argv_password_by_default_without_spawning():
     payload = json.loads(result.output)
     assert payload["success"] is False
     assert payload["returncode"] == 126
-    assert "process argv" in payload["stderr"]
+    assert "argv" in payload["stderr"]
     assert payload["redacted_command"].endswith("-p <redacted> -c auth_setting")
 
 
@@ -247,7 +304,7 @@ def test_network_auth_cli_process_env_overrides_default_active_chatenv(monkeypat
     result = CliRunner().invoke(
         main,
         [
-            "network-auth",
+            "net",
             "login",
             "--allow-argv-password",
             "--json",

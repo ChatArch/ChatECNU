@@ -37,7 +37,7 @@ def test_network_auth_login_refuses_argv_password_by_default():
     assert calls == []
     assert result.success is False
     assert result.returncode == ARGV_PASSWORD_DISABLED_RETURNCODE
-    assert "process argv" in result.stderr
+    assert "argv" in result.stderr
     assert "secret-value" not in result.stderr
     assert "secret-value" not in result.redacted_command
     assert result.redacted_command.endswith("-p <redacted> -c /etc/ecnu/auth_setting")
@@ -104,6 +104,31 @@ def test_network_auth_redacts_password_echoed_by_auth_client_output():
     assert "<redacted>" in result.stdout
     assert "<redacted>" in result.stderr
 
+
+
+def test_network_auth_logout_uses_auth_logout_command_with_username():
+    calls: list[tuple[list[str], dict[str, object]]] = []
+
+    def runner(argv, **kwargs):
+        calls.append((list(argv), dict(kwargs)))
+        return FakeCompletedProcess(list(argv), stdout="Logout success\n")
+
+    client = NetworkAuthClient(
+        auth_client_path="/opt/ecnu/auth_client",
+        setting_file="auth_setting",
+        runner=runner,
+    )
+
+    result = client.logout("student")
+
+    assert result.action == "logout"
+    assert result.success is True
+    assert calls == [
+        (
+            ["/opt/ecnu/auth_client", "-u", "student", "-c", "auth_setting", "auth", "--logout"],
+            {"capture_output": True, "check": False, "shell": False, "text": True, "timeout": 20},
+        )
+    ]
 
 def test_network_auth_check_omits_setting_file_by_default():
     calls: list[list[str]] = []

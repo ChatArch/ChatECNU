@@ -1,19 +1,56 @@
 # ChatECNU
 
-ChatECNU is the ECNU campus portal and campus-network automation package extracted from ChatNet.
+ChatECNU is a tool package for ECNU portal access and campus-network access. The package name remains `ChatECNU`; the daily command is `ecnu`.
 
-It includes the ECNU portal CLI plus an API-first, fail-closed wrapper for the external Linux `auth_client` campus-network binary. The binary is not vendored; pass its path with `--auth-client` or configure `ECNU_AUTH_CLIENT`.
+## Documentation
+
+| Task | Link |
+| --- | --- |
+| Installation and smoke checks | https://arch.gh.wzhecnu.cn/ChatECNU/en/quickstart/ |
+| CLI tree | https://arch.gh.wzhecnu.cn/ChatECNU/en/cli-tree/ |
+| ChatEnv variables | https://arch.gh.wzhecnu.cn/ChatECNU/en/chatenv/ |
+| ECNU usage | https://arch.gh.wzhecnu.cn/ChatECNU/en/ecnu/ |
+
+## Install
 
 ```bash
-# Check current auth_client login state; this does not require a password.
-chatecnu network-auth check --auth-client /usr/local/bin/auth_client --json
-
-# Put ECNU_USERNAME/ECNU_PASSWORD in process env or ChatEnv, or use -i to prompt.
-# Default login refuses to pass passwords through auth_client process argv.
-chatecnu network-auth ensure-login --auth-client /usr/local/bin/auth_client -I
-
-# Legacy opt-in only after accepting same-host process-list exposure:
-chatecnu network-auth ensure-login --auth-client /usr/local/bin/auth_client --allow-argv-password -I
+pip install ChatECNU
 ```
 
-Set `ECNU_AUTH_SETTING_FILE` only when your deployment needs an auth_client setting file; otherwise ChatECNU runs the same bare `auth_client check` shape as the legacy Precision scripts.
+For CAPTCHA OCR support:
+
+```bash
+pip install "ChatECNU[captcha]"
+```
+
+## Command Shape
+
+```text
+ecnu
+├── home      # ECNU portal
+├── net       # Campus network access
+└── visitor   # Visitor accounts
+```
+
+Portal commands live under `home`:
+
+```bash
+ecnu home login -i
+ecnu home info
+ecnu home status
+ecnu home user
+ecnu home logout
+```
+
+Campus-network commands live under `net`:
+
+```bash
+ecnu net check --auth-client /usr/local/bin/auth_client --json
+ecnu net login --auth-client /usr/local/bin/auth_client -I
+ecnu net logout --auth-client /usr/local/bin/auth_client --username "$ECNU_USERNAME" -I
+ecnu net ensure-login --auth-client /usr/local/bin/auth_client -I
+```
+
+ChatECNU does not bundle `auth_client`. Use `--auth-client` or `ECNU_AUTH_CLIENT`. Portal access and campus-network access share `ECNU_USERNAME` / `ECNU_PASSWORD`.
+
+Do not print or commit passwords, cookies, SMS codes, or session values.

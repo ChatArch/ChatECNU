@@ -104,25 +104,25 @@ def test_ecnu_mock_cli_runs_full_command_chain(monkeypatch, tmp_path):
     monkeypatch.setattr(ecnu_cli, "make_client", lambda ctx: fake)
     runner = CliRunner()
 
-    invoke_ok(runner, ["login-init", "--captcha-path", str(tmp_path / "captcha.png")])
-    manual = invoke_ok(runner, ["login", "--username", "mock-user", "--password", "secret", "--captcha", "1234", "-I"])
+    invoke_ok(runner, ["home", "login-init", "--captcha-path", str(tmp_path / "captcha.png")])
+    manual = invoke_ok(runner, ["home", "login", "--username", "mock-user", "--password", "secret", "--captcha", "1234", "-I"])
     assert "Login succeeded." in manual
-    auto = invoke_ok(runner, ["login", "--username", "mock-user", "--password", "secret", "--rounds", "1", "--topk", "1", "-I"])
+    auto = invoke_ok(runner, ["home", "login", "--username", "mock-user", "--password", "secret", "--rounds", "1", "--topk", "1", "-I"])
     assert "Login succeeded." in auto
-    session = invoke_ok(runner, ["status"])
+    session = invoke_ok(runner, ["home", "status"])
     assert "Username: mock-user" in session
-    session_json = invoke_ok(runner, ["status", "--json"])
+    session_json = invoke_ok(runner, ["home", "status", "--json"])
     assert session_json["cookies"]["PHPSESSID_8800"] == "***"
-    assert invoke_ok(runner, ["cookie-header"]) == "PHPSESSID_8800=secret-cookie\n"
-    assert "Home summary" in invoke_ok(runner, ["home"])
-    assert "账号: mock-user" in invoke_ok(runner, ["user-info"])
+    assert invoke_ok(runner, ["home", "cookie-header"]) == "PHPSESSID_8800=secret-cookie\n"
+    assert "首页摘要" in invoke_ok(runner, ["home", "info"])
+    assert "账号: mock-user" in invoke_ok(runner, ["home", "user"])
     assert "Authentication logs" in invoke_ok(runner, ["debug", "auth-log", "--limit", "1"])
     assert "Network detail logs" in invoke_ok(runner, ["debug", "detail-log", "--limit", "1"])
-    assert "Visitor accounts" in invoke_ok(runner, ["visitor", "list"])
+    assert "访客账号" in invoke_ok(runner, ["visitor", "list"])
     assert "visitor_id: 10256703" in invoke_ok(runner, ["visitor", "get", "--id", "10256703"])
     assert "account: mock-userm1" in invoke_ok(runner, ["visitor", "get", "--account", "mock-userm1"])
     created = invoke_ok(runner, ["visitor", "create", "--remark", "GuestB", "--dry-run", "-I"])
-    assert created == "Create visitor: dry run ready.\n"
+    assert created == "创建访客: 仅预览，未提交。\n"
     invoke_ok(
         runner,
         [
@@ -140,7 +140,7 @@ def test_ecnu_mock_cli_runs_full_command_chain(monkeypatch, tmp_path):
     )
     invoke_ok(runner, ["visitor", "delete", "--id", "10256703", "--dry-run", "-I"])
     invoke_ok(runner, ["visitor", "lock", "--id", "10256703", "--dry-run", "-I"])
-    invoke_ok(runner, ["logout"])
+    invoke_ok(runner, ["home", "logout"])
 
     call_names = [call[0] for call in fake.calls]
     assert call_names == [
@@ -203,7 +203,7 @@ def test_ecnu_env_file_override_supplies_login_defaults(monkeypatch, tmp_path):
 
     result = CliRunner().invoke(
         main,
-        ["--env-file", str(env_file), "login", "--rounds", "1", "--topk", "1", "-I"],
+        ["--env-file", str(env_file), "home", "login", "--rounds", "1", "--topk", "1", "-I"],
     )
 
     assert result.exit_code == 0, result.output
@@ -214,9 +214,12 @@ def test_ecnu_help_keeps_advanced_commands_hidden():
     result = CliRunner().invoke(main, ["--help"])
 
     assert result.exit_code == 0
-    assert "status" in result.output
-    assert "visitor" in result.output
     assert "home" in result.output
+    assert "net" in result.output
+    assert "visitor" in result.output
+    assert "login" not in result.output
+    assert "status" not in result.output
+    assert "user-info" not in result.output
     assert "cookie-header" not in result.output
     assert "login-init" not in result.output
     assert "login-auto" not in result.output
@@ -237,3 +240,21 @@ def test_ecnu_visitor_help_keeps_lock_hidden():
     assert "update" in result.output
     assert "delete" in result.output
     assert "lock" not in result.output
+
+
+def test_ecnu_home_help_shows_portal_commands():
+    result = CliRunner().invoke(main, ["home", "--help"], prog_name="ecnu")
+
+    assert result.exit_code == 0
+    assert "info" in result.output
+    assert "login" in result.output
+    assert "logout" in result.output
+    assert "status" in result.output
+    assert "user" in result.output
+
+
+def test_ecnu_removed_top_level_portal_commands_and_long_network_command():
+    runner = CliRunner()
+    for command in ["login", "logout", "status", "user-info", "network-auth", "auth"]:
+        result = runner.invoke(main, [command, "--help"], prog_name="ecnu")
+        assert result.exit_code != 0

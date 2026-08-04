@@ -1,14 +1,49 @@
-# ChatECNU Docs
+# ChatECNU Documentation
 
-Long-lived documentation for `ChatECNU` lives here.
+ChatECNU provides Python APIs and command-line tools for ECNU portal access and campus-network access. The daily command is `ecnu`.
 
-ChatECNU covers ECNU portal automation and a safe Python/CLI wrapper for the external campus-network `auth_client` binary. The binary is not redistributed by the package.
+<div class="grid cards" markdown>
 
-## Local Preview
+-   :material-home: **Portal**
 
-```bash
-pip install -e ".[docs]"
-mkdocs serve
-```
+    ---
 
-Chinese version: [index.md](index.md).
+    Login, read the portal home summary, inspect session state, and read user info.
+
+    [`ecnu home ...`](cli-tree.md#home)
+
+-   :material-lan-connect: **Campus network**
+
+    ---
+
+    Wrap an external `auth_client` to check, login, logout, or ensure local network access.
+
+    [`ecnu net ...`](cli-tree.md#net)
+
+-   :material-account-group: **Visitor accounts**
+
+    ---
+
+    Manage ECNU visitor accounts with dry-run support for mutations.
+
+    [`ecnu visitor ...`](cli-tree.md#visitor)
+
+-   :material-key: **ChatEnv config**
+
+    ---
+
+    Store credentials, Cookies, and local network settings under the `ecnu` type.
+
+    [View variables](chatenv.md)
+
+</div>
+
+## Start Here
+
+| Goal | Entry |
+| --- | --- |
+| Install and verify | [Quickstart](quickstart.md) |
+| Read the command tree | [CLI Tree](cli-tree.md) |
+| Check capability boundaries | [Capability Map](capability-map.md) |
+| Map to Python APIs | [Interface Tree](interface-tree.md) |
+| Use portal and network commands | [ECNU Usage](ecnu.md) |

@@ -2,7 +2,7 @@ from chatecnu import __version__
 
 
 def test_version_present():
-    assert __version__ == "0.1.1"
+    assert __version__ == "0.2.0"
 
 
 def test_cli_version_option():
@@ -12,4 +12,4 @@ def test_cli_version_option():
     result = CliRunner().invoke(main, ["--version"])
 
     assert result.exit_code == 0
-    assert "0.1.1" in result.output
+    assert "0.2.0" in result.output

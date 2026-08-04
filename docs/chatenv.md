@@ -1,0 +1,34 @@
+# ChatEnv 变量
+
+ChatECNU 注册的 ChatEnv 类型是 `ecnu`。门户和校园网共用同一个 ECNU 账号密码，不拆两套变量。
+
+## 常用命令
+
+```bash
+chatenv list
+chatenv new default -t ecnu -I --yes
+```
+
+`-e/--env` 只选择本次命令使用的 ChatEnv profile，不切换全局 active profile。显式 profile 内的值优先，避免不同账号串用。
+
+## 变量
+
+| 变量 | 用途 | 敏感 |
+| --- | --- | --- |
+| `ECNU_USERNAME` | 门户和校园网共用用户名 | 否 |
+| `ECNU_PASSWORD` | 门户和校园网共用密码 | 是 |
+| `ECNU_COOKIE` | 已有门户 Cookie | 是 |
+| `ECNU_BASE_URL` | 门户基地址 | 否 |
+| `ECNU_AUTH_CLIENT` | 本机 `auth_client` 路径 | 否 |
+| `ECNU_AUTH_SETTING_FILE` | 可选设置文件 | 否 |
+| `ECNU_VISITOR_PASSWORD1` | 默认访客账号一密码 | 是 |
+| `ECNU_VISITOR_PASSWORD2` | 默认访客账号二密码 | 是 |
+| `ECNU_VISITOR_REMARK` | 默认访客备注 | 否 |
+
+## 使用示例
+
+```bash
+ecnu -e default home status
+ecnu -e default net check --json
+ecnu -e default visitor default -I
+```

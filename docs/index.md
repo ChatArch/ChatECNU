@@ -16,7 +16,7 @@ ChatECNU 提供 ECNU 门户和校园网联网的 Python API 与命令行工具�
 
     ---
 
-    包装外部 `auth_client`，检查、登录、退出或确保本机在线。
+    使用 PyPI 包内置的 Linux x86_64 `auth_client`，检查、登录、退出或确保本机在线。
 
     [`ecnu net ...`](cli-tree.md#net)
 

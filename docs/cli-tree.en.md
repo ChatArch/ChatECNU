@@ -34,7 +34,7 @@ ecnu net
 └── ensure-login  # Login only when offline
 ```
 
-`net` manages local campus-network access. It wraps an external `auth_client` binary and does not bundle it.
+`net` manages local campus-network access. It uses the PyPI-bundled Linux x86_64 `auth_client` by default; `--auth-client` / `ECNU_AUTH_CLIENT` can override the path.
 
 ## visitor {#visitor}
 

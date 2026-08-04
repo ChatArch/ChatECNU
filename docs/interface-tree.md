@@ -22,7 +22,7 @@ chatecnu
 | `PortalClient.auth_logs()` / `detail_logs()` | `ecnu debug ...`（隐藏） |
 | `NetworkAuthClient.check()` | `ecnu net check` |
 | `NetworkAuthClient.login()` | `ecnu net login` |
-| `NetworkAuthClient.logout()` | `ecnu net logout` |
+| `NetworkAuthClient.logout()` / `logout_current()` | `ecnu net logout` |
 | `NetworkAuthClient.ensure_login()` | `ecnu net ensure-login` |
 | `PortalClient.list_visitors()` | `ecnu visitor list` |
 | `PortalClient.get_visitor()` | `ecnu visitor get` |

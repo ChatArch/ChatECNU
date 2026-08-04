@@ -29,13 +29,13 @@ ecnu home login --captcha ABCD -I
 
 ## Campus network access {#network-login}
 
-Campus-network access manages local network authentication through an external `auth_client` binary.
+Campus-network access manages local network authentication through the Linux x86_64 `auth_client` binary bundled in the PyPI package by default.
 
 ```bash
-ecnu net check --auth-client /usr/local/bin/auth_client --json
-ecnu net login --auth-client /usr/local/bin/auth_client -I
-ecnu net logout --auth-client /usr/local/bin/auth_client --username "$ECNU_USERNAME" -I
-ecnu net ensure-login --auth-client /usr/local/bin/auth_client -I
+ecnu net check --json
+ecnu net login -I --allow-argv-password
+ecnu net logout -I
+ecnu net ensure-login -I --allow-argv-password
 ```
 
 `check` does not need a password. `login` shares `ECNU_USERNAME` / `ECNU_PASSWORD` with portal login; `logout` only needs the username. The wrapper does not pass `-c` by default; it uses a setting file only when `--setting-file` or `ECNU_AUTH_SETTING_FILE` is configured.

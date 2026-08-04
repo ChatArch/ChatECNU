@@ -2,7 +2,8 @@ from click.testing import CliRunner
 
 from chatecnu.config import ECNUConfig
 from chatecnu.cli import main
-from chatecnu.ecnu.cli import load_chatenv, redact_state
+from chatecnu.ecnu.cli import format_network_auth_result, load_chatenv, redact_state
+from chatecnu.network_auth import NetworkAuthResult
 
 
 def test_help_lists_ecnu_commands():
@@ -57,3 +58,24 @@ def test_redact_state_masks_cookies_and_login_bootstrap_secrets():
     assert redacted["cookies"] == {"PHPSESSID_8800": "***"}
     assert redacted["login_bootstrap"]["csrf_token"] == "***"
     assert redacted["login_bootstrap"]["csrf_param"] == "***"
+
+
+def test_format_network_auth_check_displays_login_info():
+    result = NetworkAuthResult(
+        action="check",
+        success=True,
+        returncode=0,
+        stdout="Account 20260001 is online.\n",
+        stderr='time="2026-08-05T04:11:52+08:00" level=info Online=true Username=20260001\n',
+        redacted_command="auth_client check",
+        online=True,
+        account="20260001",
+        username="20260001",
+    )
+
+    summary = format_network_auth_result(result)
+
+    assert "auth_client OK." in summary
+    assert "Online: true" in summary
+    assert "Account: 20260001" in summary
+    assert "Username: 20260001" in summary

@@ -45,12 +45,12 @@ ecnu home logout
 校园网联网统一放在 `net` 下：
 
 ```bash
-ecnu net check --auth-client /usr/local/bin/auth_client --json
-ecnu net login --auth-client /usr/local/bin/auth_client -I
-ecnu net logout --auth-client /usr/local/bin/auth_client --username "$ECNU_USERNAME" -I
-ecnu net ensure-login --auth-client /usr/local/bin/auth_client -I
+ecnu net check --json
+ecnu net login -I --allow-argv-password
+ecnu net logout -I
+ecnu net ensure-login -I --allow-argv-password
 ```
 
-ChatECNU 不打包 `auth_client`。请用 `--auth-client` 或 `ECNU_AUTH_CLIENT` 指定路径。账号密码使用同一组 `ECNU_USERNAME` / `ECNU_PASSWORD`。
+ChatECNU 的 PyPI wheel/sdist 内置 Linux x86_64 `auth_client`，默认 `ecnu net ...` 会优先使用该内置二进制；如需覆盖，可用 `--auth-client` 或 `ECNU_AUTH_CLIENT` 指定路径。账号密码使用同一组 `ECNU_USERNAME` / `ECNU_PASSWORD`。`net check` 会显示当前 `online/account/username`；`net logout` 未提供用户名时会先从 `auth_client check` 的 `Username=...` 自动提取。
 
 敏感值（密码、Cookie、短信码、会话）不要打印或提交。

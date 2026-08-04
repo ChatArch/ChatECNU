@@ -3,11 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 import subprocess
 
+from pathlib import Path
+
 from chatecnu.network_auth import (
     ARGV_PASSWORD_DISABLED_RETURNCODE,
     NetworkAuthClient,
     NetworkAuthCredentials,
     is_online_output,
+    resolve_auth_client_path,
 )
 
 
@@ -142,7 +145,63 @@ def test_network_auth_check_omits_setting_file_by_default():
 
     assert result.success is True
     assert result.online is True
+    assert result.account == "20260001"
     assert calls == [["/opt/ecnu/auth_client", "check"]]
+
+
+def test_network_auth_check_parses_login_info_from_auth_client_stderr():
+    def runner(argv, **kwargs):
+        return FakeCompletedProcess(
+            list(argv),
+            stdout="Account 20260001 is online.\n",
+            stderr='time="2026-08-05T04:11:52+08:00" level=info msg="Account 20260001 is online." Online=true Username=20260001\n',
+        )
+
+    client = NetworkAuthClient(auth_client_path="/opt/ecnu/auth_client", runner=runner)
+    result = client.check()
+
+    assert result.success is True
+    assert result.online is True
+    assert result.account == "20260001"
+    assert result.username == "20260001"
+    assert is_online_output(result.stderr) is True
+
+
+def test_network_auth_logout_current_matches_ecnu_login_script_check_then_logout():
+    calls: list[list[str]] = []
+
+    def runner(argv, **kwargs):
+        calls.append(list(argv))
+        if argv[-1] == "check":
+            return FakeCompletedProcess(
+                list(argv),
+                stdout="Account 20260001 is online.\n",
+                stderr='time="2026-08-05T04:11:52+08:00" level=info Online=true Username=20260001\n',
+            )
+        return FakeCompletedProcess(list(argv), stdout="Logout success\n")
+
+    client = NetworkAuthClient(auth_client_path="/opt/ecnu/auth_client", runner=runner)
+    result = client.logout_current()
+
+    assert result.action == "logout"
+    assert result.success is True
+    assert result.username == "20260001"
+    assert calls == [
+        ["/opt/ecnu/auth_client", "check"],
+        ["/opt/ecnu/auth_client", "-u", "20260001", "auth", "--logout"],
+    ]
+
+
+def test_resolve_auth_client_path_prefers_bundled_linux_binary(monkeypatch):
+    monkeypatch.setattr("chatecnu.network_auth.platform.system", lambda: "Linux")
+    monkeypatch.setattr("chatecnu.network_auth.platform.machine", lambda: "x86_64")
+    monkeypatch.setattr("chatecnu.network_auth.shutil.which", lambda name: None)
+
+    resolved = Path(resolve_auth_client_path(None))
+
+    assert resolved.name == "auth_client"
+    assert resolved.parts[-3:] == ("bin", "linux-x86_64", "auth_client")
+    assert resolved.is_file()
 
 
 def test_network_auth_check_treats_auth_client_error_log_as_failure():
@@ -160,6 +219,23 @@ def test_network_auth_check_treats_auth_client_error_log_as_failure():
     assert result.returncode == 0
     assert result.online is False
     assert "auth_setting" in result.stderr
+
+
+def test_network_auth_check_suppresses_not_online_error_as_login_identity():
+    def runner(argv, **kwargs):
+        return FakeCompletedProcess(
+            list(argv),
+            stdout="Account not_online_error is online.\n",
+            stderr='time="2026-08-05T04:23:38+08:00" level=info msg="Account not_online_error is online." Online=true Username=not_online_error\n',
+        )
+
+    client = NetworkAuthClient(auth_client_path="/opt/ecnu/auth_client", runner=runner)
+    result = client.check()
+
+    assert result.success is True
+    assert result.online is False
+    assert result.account is None
+    assert result.username is None
 
 
 def test_network_auth_output_parser_handles_known_offline_and_timeout_cases():

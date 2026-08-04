@@ -26,7 +26,6 @@ Common variables:
 ```text
 ECNU_USERNAME=your account
 ECNU_PASSWORD=your password
-ECNU_AUTH_CLIENT=/usr/local/bin/auth_client
 ```
 
 See [ChatEnv Variables](chatenv.md) for the full schema.
@@ -43,8 +42,8 @@ ecnu home user
 ## Campus Network Smoke
 
 ```bash
-ecnu net check --auth-client /usr/local/bin/auth_client --json
-ecnu net ensure-login --auth-client /usr/local/bin/auth_client -I
+ecnu net check --json
+ecnu net ensure-login -I --allow-argv-password
 ```
 
 `check` does not need a password. `login` / `ensure-login` do not pass passwords through external process argv by default. Use `--allow-argv-password` only after accepting local process-list exposure.

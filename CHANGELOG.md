@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.3
+
+### Fixed
+
+- 修复 MkDocs 首页 Material 图标没有渲染、裸露 `:material-*:` 文本的问题。
+- 新增文档渲染回归测试，要求中英文首页生成 HTML 中不再出现 literal `:material-` token。
+
 ## 0.2.2
 
 ### Added

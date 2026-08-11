@@ -63,6 +63,8 @@ ecnu home user
 ecnu home logout
 ```
 
+门户会话默认写入 ChatEnv runtime token-store：`~/.chatarch/tokens/ECNU/<profile>.json`；`ecnu home status --json` 只回读安全摘要，不输出原始 Cookie/CSRF。
+
 校园网联网统一放在 `net` 下：
 
 ```bash

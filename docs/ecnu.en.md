@@ -4,7 +4,7 @@ ChatECNU splits ECNU capabilities into three groups: `home` for portal access, `
 
 ## Portal {#portal}
 
-Portal login creates an ECNU Web/API session used by home summary, user info, and visitor-account APIs.
+Portal login creates an ECNU Web/API session used by home summary, user info, and visitor-account APIs. Sessions are stored in ChatEnv's runtime token store by default: `~/.chatarch/tokens/ECNU/<profile>.json`. `ecnu home status --json` returns only safe metadata such as cookie count, token file, and profile; it never prints raw cookies or CSRF values.
 
 ```bash
 ecnu home login --rounds 3 --topk 5 -I

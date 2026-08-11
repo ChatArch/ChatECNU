@@ -6,6 +6,7 @@
 chatecnu
 ├── cli.main                 # Click 入口；安装后提供 ecnu 命令
 ├── config.ECNUConfig        # ChatEnv ecnu 类型
+├── ecnu.session_tokens      # ECNU 门户会话的 ChatEnv token-store adapter
 ├── network_auth             # 校园网 auth_client 包装
 └── ecnu.portal              # ECNU 门户客户端
 ```
@@ -33,4 +34,4 @@ chatecnu
 
 ## ChatEnv 接口
 
-完整变量说明见 [ChatEnv 变量](chatenv.md)。敏感字段由 ChatEnv 和命令输出侧脱敏处理。
+完整变量说明见 [ChatEnv 变量](chatenv.md)。稳定敏感字段由 ChatEnv profile 管理；门户 Cookie/CSRF 会话状态由 ChatEnv token-store 管理，命令输出只显示安全摘要。

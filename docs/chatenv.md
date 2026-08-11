@@ -1,6 +1,6 @@
 # ChatEnv 变量
 
-ChatECNU 注册的 ChatEnv 类型是 `ecnu`。门户和校园网共用同一个 ECNU 账号密码，不拆两套变量。
+ChatECNU 注册的 ChatEnv 类型是 `ecnu`。门户和校园网共用同一个 ECNU 账号密码，不拆两套变量。稳定配置保存在 `~/.chatarch/envs/ECNU/<profile>.env`；门户 Web/API 会话、Cookie 和 CSRF 等动态状态保存在 ChatEnv runtime token-store：`~/.chatarch/tokens/ECNU/<profile>.json`。
 
 ## 常用命令
 
@@ -17,7 +17,6 @@ chatenv new default -t ecnu -I --yes
 | --- | --- | --- |
 | `ECNU_USERNAME` | 门户和校园网共用用户名 | 否 |
 | `ECNU_PASSWORD` | 门户和校园网共用密码 | 是 |
-| `ECNU_COOKIE` | 已有门户 Cookie | 是 |
 | `ECNU_BASE_URL` | 门户基地址 | 否 |
 | `ECNU_AUTH_CLIENT` | 可选 auth_client 覆盖路径；默认使用 PyPI 内置二进制 | 否 |
 | `ECNU_AUTH_SETTING_FILE` | 可选设置文件 | 否 |
@@ -29,6 +28,7 @@ chatenv new default -t ecnu -I --yes
 
 ```bash
 ecnu -e default home status
+chatenv token status -s ECNU -p default
 ecnu -e default net check --json
 ecnu -e default visitor default -I
 ```

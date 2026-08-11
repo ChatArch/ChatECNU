@@ -14,7 +14,7 @@
 - `ecnu home login --captcha ...` supports the hidden manual captcha path and calls `login`.
 - `ecnu home login` without `--captcha` resolves credentials and calls `login_auto`.
 - `ecnu home status` defaults to a human summary and `--json` returns the redacted JSON payload.
-- Advanced commands such as `home cookie-header`, `home login-init`, and `selftest` still work when called directly but are hidden from the default help surface.
+- Advanced helpers such as `home login-init` and `selftest` still work when called directly but are hidden from the default help surface; raw `home cookie-header` output is disabled.
 - `ecnu home info`, `ecnu home user`, hidden `debug auth-log`, hidden `debug detail-log`, and visitor commands call their matching client methods.
 - Visitor mutation commands support `--dry-run`.
 - Visitor mutations default to readable summaries unless `--json` is requested.

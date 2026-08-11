@@ -5,6 +5,7 @@ ChatECNU 把 ECNU 相关能力分成三组：`home` 管门户，`net` 管校园�
 ## 门户 {#portal}
 
 门户登录建立 ECNU Web/API 会话，供首页摘要、用户信息和访客账号接口使用。
+会话默认保存到 ChatEnv token-store：`~/.chatarch/tokens/ECNU/<profile>.json`；`ecnu home status --json` 只输出 Cookie 数量、token 文件、profile 等安全摘要，不输出原始 Cookie/CSRF。
 
 ```bash
 ecnu home login --rounds 3 --topk 5 -I

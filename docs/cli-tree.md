@@ -32,7 +32,7 @@ ecnu
     └── update [--id VISITOR-ID] [--remark REMARK] [--password PASSWORD] [--dry-run] [--json] [--interactive]  # 更新访客备注和密码。
 ```
 
-隐藏的 `debug`、`selftest`、`home login-init/login-auto/session-info/cookie-header` 和 `visitor lock` 仍保留给诊断/内部流程，不作为主用户树展示。
+隐藏的 `debug`、`selftest`、`home login-init/login-auto/session-info` 和 `visitor lock` 仍保留给诊断/内部流程，不作为主用户树展示；`home cookie-header` 为避免 raw Cookie 泄漏已禁用。
 
 ## home {#home}
 

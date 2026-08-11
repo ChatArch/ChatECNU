@@ -81,8 +81,115 @@ VISITOR_DEFAULT_SCHEMA = CommandSchema(
 )
 
 
+def _format_metavar(name: str) -> str:
+    return name.replace("_", "-").upper()
+
+
+def _format_argument(param: click.Argument) -> str:
+    metavar = _format_metavar(param.name or "ARG")
+    if param.nargs == -1:
+        metavar = f"{metavar}..."
+    if not param.required:
+        return f"[{metavar}]"
+    return f"<{metavar}>"
+
+
+def _format_option(param: click.Option) -> str:
+    visible_opts = [opt for opt in param.opts if opt.startswith("--")]
+    visible_opts.extend(opt for opt in param.secondary_opts if opt.startswith("--"))
+    flag = visible_opts[0] if visible_opts else (param.opts[0] if param.opts else param.name or "OPTION")
+    if param.is_flag:
+        return f"[{flag}]"
+    return f"[{flag} {_format_metavar(param.name or 'VALUE')}]"
+
+
+def _command_signature(command: click.Command) -> str:
+    parts: list[str] = []
+    for param in command.params:
+        if getattr(param, "hidden", False):
+            continue
+        if isinstance(param, click.Argument):
+            parts.append(_format_argument(param))
+        elif isinstance(param, click.Option):
+            parts.append(_format_option(param))
+    return " ".join(parts)
+
+
+def _command_summary(command: click.Command) -> str:
+    return (command.short_help or command.help or "").strip().splitlines()[0]
+
+
+def _root_option_items(group: click.Group) -> list[tuple[str, str]]:
+    items = [
+        ("--help", "Show this message and exit."),
+        ("--version", "Show the installed ChatECNU version."),
+        ("--tree", "Print this registered command tree and exit."),
+    ]
+    for param in group.params:
+        if getattr(param, "hidden", False) or not isinstance(param, click.Option):
+            continue
+        if param.name in {"version", "tree"}:
+            continue
+        items.append((_format_option(param).strip("[]"), param.help or ""))
+    return items
+
+
+def _group_items(group: click.Group) -> list[tuple[str, str | click.Command]]:
+    items: list[tuple[str, str | click.Command]] = []
+    if group is cli:
+        items.extend(_root_option_items(group))
+    for name in group.list_commands(click.Context(group)):
+        command = group.get_command(click.Context(group), name)
+        if command is None or command.hidden:
+            continue
+        items.append((name, command))
+    return items
+
+
+def render_cli_tree(root: click.Group | None = None) -> str:
+    """Render the registered Click command tree for `ecnu --tree`."""
+    if root is None:
+        root = cli
+    lines = [root.name or "ecnu"]
+
+    def walk(items: list[tuple[str, str | click.Command]], prefix: str = "") -> None:
+        for index, (name, item) in enumerate(items):
+            last = index == len(items) - 1
+            branch = "└── " if last else "├── "
+            child_prefix = prefix + ("    " if last else "│   ")
+            if isinstance(item, str):
+                summary = f"  # {item}" if item else ""
+                lines.append(f"{prefix}{branch}{name}{summary}")
+                continue
+            signature = _command_signature(item)
+            label = f"{name} {signature}".strip()
+            lines.append(f"{prefix}{branch}{label}  # {_command_summary(item)}")
+            if isinstance(item, click.Group):
+                walk(_group_items(item), child_prefix)
+
+    walk(_group_items(root))
+    return "\n".join(lines)
+
+
+def _tree_callback(ctx: click.Context, param: click.Option, value: bool) -> None:
+    if not value or ctx.resilient_parsing:
+        return
+    if not isinstance(ctx.command, click.Group):
+        raise click.ClickException("--tree is only available on command groups")
+    click.echo(render_cli_tree(ctx.command))
+    ctx.exit()
+
+
 @click.group(name="ecnu")
 @click.version_option(__version__)
+@click.option(
+    "--tree",
+    is_flag=True,
+    is_eager=True,
+    expose_value=False,
+    callback=_tree_callback,
+    help="Print the registered CLI command tree and exit.",
+)
 @click.option(
     "--base-url",
     default=None,

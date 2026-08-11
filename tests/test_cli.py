@@ -10,10 +10,43 @@ def test_help_lists_ecnu_commands():
     result = CliRunner().invoke(main, ["--help"])
 
     assert result.exit_code == 0
+    assert "--tree" in result.output
     assert "home" in result.output
     assert "net" in result.output
     assert "visitor" in result.output
     assert "status" not in result.output
+
+
+def test_tree_option_renders_visible_registered_command_surface():
+    result = CliRunner().invoke(main, ["--tree"])
+
+    assert result.exit_code == 0
+    assert result.output.startswith("ecnu\n")
+    assert "--tree" in result.output
+    assert "--version" in result.output
+    assert "--env ENV-PROFILE" in result.output
+    assert "├── home" in result.output
+    assert "│   ├── info" in result.output
+    assert "│   ├── login" in result.output
+    assert "│   ├── logout" in result.output
+    assert "│   ├── status" in result.output
+    assert "│   └── user" in result.output
+    assert "├── net" in result.output
+    assert "│   ├── check" in result.output
+    assert "│   ├── ensure-login" in result.output
+    assert "│   ├── login" in result.output
+    assert "│   └── logout" in result.output
+    assert "└── visitor" in result.output
+    assert "    ├── create" in result.output
+    assert "    ├── default" in result.output
+    assert "    ├── delete" in result.output
+    assert "    ├── get" in result.output
+    assert "    ├── list" in result.output
+    assert "    └── update" in result.output
+    assert "debug" not in result.output
+    assert "selftest" not in result.output
+    assert "lock" not in result.output
+    assert "hello" not in result.output
 
 
 def test_selftest_runs_without_network():

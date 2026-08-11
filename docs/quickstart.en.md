@@ -30,6 +30,13 @@ ECNU_PASSWORD=your password
 
 See [ChatEnv Variables](chatenv.md) for the full schema.
 
+## CLI Smoke
+
+```bash
+ecnu --version
+ecnu --tree
+```
+
 ## Portal Smoke
 
 ```bash

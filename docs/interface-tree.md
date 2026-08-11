@@ -14,6 +14,7 @@ chatecnu
 
 | Python 接口 | 命令行映射 |
 | --- | --- |
+| `chatecnu.ecnu.cli.render_cli_tree()` | `ecnu --tree` |
 | `PortalClient.login_init()` | `ecnu home login-init`（隐藏） |
 | `PortalClient.login()` / `login_auto()` | `ecnu home login` |
 | `PortalClient.logout()` | `ecnu home logout` |

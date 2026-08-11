@@ -14,6 +14,7 @@ chatecnu
 
 | Python API | Command mapping |
 | --- | --- |
+| `chatecnu.ecnu.cli.render_cli_tree()` | `ecnu --tree` |
 | `PortalClient.login_init()` | `ecnu home login-init` (hidden) |
 | `PortalClient.login()` / `login_auto()` | `ecnu home login` |
 | `PortalClient.logout()` | `ecnu home logout` |

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.2
+
+### Added
+
+- 新增顶层 `ecnu --tree`，从当前 Click 注册命令面生成可回读命令树。
+
+### Changed
+
+- README、quickstart、命令树、接口树与 `ecnu --tree` 输出同步；隐藏诊断命令不进入主用户树。
+- 将 ChatEnv 依赖下界提高到已发布的 `chatenv>=0.2.4,<0.3.0`。
+
 ## 0.2.1
 
 ### Fixed

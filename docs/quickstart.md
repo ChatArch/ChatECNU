@@ -30,6 +30,13 @@ ECNU_PASSWORD=你的密码
 
 完整变量见 [ChatEnv 变量](chatenv.md)。
 
+## CLI 最小验证
+
+```bash
+ecnu --version
+ecnu --tree
+```
+
 ## 门户最小验证
 
 ```bash

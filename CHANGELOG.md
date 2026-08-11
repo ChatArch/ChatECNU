@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.5
+
+### Changed
+
+- Broaden the docs extra to the current ChatArch `mkdocs-material>=9.5,<10.0` window while preserving the existing Material icon renderer.
+- Harden package publishing with a default-branch ancestry guard and an explicitly named OIDC PyPI publish step.
+- Expand CI to Python 3.10/3.11/3.12 and add installed `ecnu --version` / `ecnu --tree` smoke checks.
+- Point package homepage metadata at the ChatArch docs domain.
+- This release only changes packaging, docs, and workflow guardrails; it does not change ECNU portal, campus-network, token-store, visitor-account, or `auth_client` runtime behavior.
+
 ## 0.2.4
 
 ### Changed

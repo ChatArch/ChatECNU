@@ -35,16 +35,16 @@ ecnu = "chatecnu.config"
 ECNU = "chatecnu.ecnu.session_tokens:refresh_chatenv_token"
 
 [project.urls]
-Homepage = "https://github.com/ChatArch/ChatECNU"
-Repository = "https://github.com/ChatArch/ChatECNU"
+Homepage = "https://arch.gh.wzhecnu.cn/ChatECNU/"
 Documentation = "https://arch.gh.wzhecnu.cn/ChatECNU/"
+Repository = "https://github.com/ChatArch/ChatECNU"
 
 [project.optional-dependencies]
 captcha = ["ddddocr", "numpy", "pillow"]
 dev = ["build", "pytest", "twine"]
 docs = [
     "mkdocs>=1.6,<2.0",
-    "mkdocs-material>=9.5,<9.7",
+    "mkdocs-material>=9.5,<10.0",
     "mkdocs-static-i18n>=1.2,<2.0",
     "mike>=2.0,<3.0",
 ]

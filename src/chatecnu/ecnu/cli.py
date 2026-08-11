@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 import click
+from chatenv import TokenStore
 from chatstyle import CommandField, CommandSchema, add_interactive_option, resolve_command_inputs
 from chatenv.fields import BaseEnvConfig
 from chatenv.paths import get_paths
@@ -24,6 +25,7 @@ from chatecnu.network_auth import (
     resolve_auth_client_path,
 )
 from .portal import BASE_URL
+from .session_tokens import ECNU_SESSION_SERVICE, portal_session_profile
 
 
 LOGIN_SCHEMA = CommandSchema(
@@ -200,13 +202,13 @@ def _tree_callback(ctx: click.Context, param: click.Option, value: bool) -> None
     "--state-file",
     default=None,
     hidden=True,
-    help="Session state JSON file. Defaults to $CHATARCH_HOME/cache/chatecnu-session.json.",
+    help="Explicit legacy session state JSON file. Defaults to ChatEnv token-store tokens/ECNU/<profile>.json.",
 )
 @click.option(
     "--cookie",
     default=None,
     hidden=True,
-    help="Existing authenticated Cookie header. Defaults to chatenv ECNU_COOKIE.",
+    help="Explicit one-shot authenticated Cookie header override.",
 )
 @click.option("-e", "--env", "env_profile", default=None, help="ChatEnv 配置名。")
 @click.option("--env-file", default=None, hidden=True, help="Explicit env file override for ECNU values.")
@@ -224,10 +226,13 @@ def cli(
     """ECNU 门户工具。"""
 
     load_chatenv(env_profile=env_profile, env_file=env_file)
+    token_profile = portal_session_profile(env_profile)
     ctx.obj = {
         "base_url": base_url or ECNUConfig.ECNU_BASE_URL.value or BASE_URL,
-        "state_file": Path(state_file).expanduser() if state_file else default_state_file(),
-        "cookie": cookie or ECNUConfig.ECNU_COOKIE.value,
+        "state_file": Path(state_file).expanduser() if state_file else None,
+        "use_token_store": state_file is None,
+        "token_profile": token_profile,
+        "cookie": cookie,
         "timeout": timeout,
         "env_profile": env_profile,
         "env_file": env_file,
@@ -382,7 +387,7 @@ def session_info(ctx: click.Context, json_output: bool) -> None:
 def cookie_header(ctx: click.Context) -> None:
     """Print the current Cookie header from state/session."""
 
-    click.echo(make_client(ctx).cookie_header())
+    raise click.ClickException("Raw cookie output is disabled; use `ecnu home status --json` for redacted session metadata.")
 
 
 @home_group.command(name="logout")
@@ -929,11 +934,20 @@ def make_client(ctx: click.Context) -> Any:
     from .portal import PortalClient
 
     config = ctx.find_root().obj or ctx.obj or {}
+    token_store = TokenStore() if config.get("use_token_store") else None
+    token_profile = config.get("token_profile") or portal_session_profile(config.get("env_profile"))
+    state_file = config.get("state_file")
+    if token_store is not None:
+        state_file = token_store.token_path(ECNU_SESSION_SERVICE, token_profile)
+    elif state_file is None:
+        state_file = default_state_file()
     return PortalClient(
         base_url=config["base_url"],
-        state_file=config["state_file"],
+        state_file=Path(state_file),
         cookie_header=config.get("cookie"),
         timeout=config["timeout"],
+        token_store=token_store,
+        token_profile=token_profile,
     )
 
 
@@ -1105,6 +1119,12 @@ def format_status_summary(result: dict[str, Any]) -> str:
     else:
         lines.append("Authenticated at: not logged in")
     lines.append(f"Cookies saved: {len(cookies) if isinstance(cookies, dict) else 0}")
+    if result.get("session_storage") == "token_store":
+        lines.append(f"Session storage: token-store ({result.get('token_profile')})")
+        if result.get("token_file"):
+            lines.append(f"Token file: {result['token_file']}")
+    elif result.get("state_file"):
+        lines.append(f"Session storage: state-file ({result['state_file']})")
     if result.get("base_url"):
         lines.append(f"Base URL: {result['base_url']}")
     return "\n".join(lines)
@@ -1246,7 +1266,11 @@ def resolve_default_visitor_inputs(
 
 
 def session_status(ctx: click.Context) -> dict[str, Any]:
-    return redact_state(make_client(ctx).state)
+    client = make_client(ctx)
+    result = redact_state(client.state)
+    if hasattr(client, "session_storage_status"):
+        result.update(client.session_storage_status())
+    return result
 
 
 def ensure_default_visitors(

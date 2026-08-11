@@ -5,6 +5,14 @@ import sys
 from pathlib import Path
 
 
+def test_quickstart_uses_active_ecnu_env_profile() -> None:
+    repo = Path(__file__).resolve().parents[1]
+    for relative in ("docs/quickstart.md", "docs/quickstart.en.md"):
+        text = (repo / relative).read_text(encoding="utf-8")
+        assert "chatenv init -t ecnu -I" in text
+        assert "chatenv new default -t ecnu -I --yes" not in text
+
+
 def test_mkdocs_material_icons_render_without_literal_tokens(tmp_path: Path) -> None:
     site_dir = tmp_path / "site"
     result = subprocess.run(

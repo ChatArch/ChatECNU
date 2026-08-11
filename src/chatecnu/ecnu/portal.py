@@ -23,11 +23,20 @@ from chatnet.portal import (
     find_table_with_headers,
     first_multirow_table,
     parse_detail_view_table,
+    parse_cookie_header,
     parse_tables,
     request_spec,
     require_value,
     strip_tags,
     table_to_dicts,
+)
+
+from .session_tokens import (
+    ECNU_SESSION_SERVICE,
+    load_portal_session_state,
+    portal_session_profile,
+    portal_session_status,
+    save_portal_session_state,
 )
 
 BASE_URL = "https://login.ecnu.edu.cn:8800"
@@ -113,6 +122,55 @@ class VisitorRow:
 
 
 class PortalClient(BrowserPortalClient):
+    def __init__(
+        self,
+        base_url: str,
+        state_file: Path,
+        cookie_header: str | None = None,
+        timeout: int = 20,
+        *,
+        token_store: Any | None = None,
+        token_profile: str | None = None,
+    ) -> None:
+        self._token_store = token_store
+        self._token_profile = portal_session_profile(token_profile)
+        super().__init__(base_url=base_url, state_file=state_file, cookie_header=None, timeout=timeout)
+        if self._token_store is not None:
+            self.state = load_portal_session_state(env_profile=self._token_profile, token_store=self._token_store)
+            self.session.cookies.clear()
+            state_cookies = self.state.get("cookies") or {}
+            if isinstance(state_cookies, dict) and state_cookies:
+                requests.utils.add_dict_to_cookiejar(self.session.cookies, state_cookies)
+        if cookie_header:
+            requests.utils.add_dict_to_cookiejar(self.session.cookies, parse_cookie_header(cookie_header))
+
+    def _save_state(self, extra: dict[str, Any] | None = None) -> None:
+        if self._token_store is None:
+            return super()._save_state(extra)
+        payload = dict(self.state)
+        payload["base_url"] = self.base_url
+        payload["cookies"] = requests.utils.dict_from_cookiejar(self.session.cookies)
+        if extra:
+            payload.update(extra)
+        save_portal_session_state(payload, env_profile=self._token_profile, token_store=self._token_store)
+        self.state = payload
+
+    def session_storage_status(self) -> dict[str, Any]:
+        if self._token_store is None:
+            return {
+                "session_storage": "state_file",
+                "state_file": str(self.state_file),
+            }
+        status = portal_session_status(env_profile=self._token_profile, token_store=self._token_store)
+        return {
+            "session_storage": "token_store",
+            "token_profile": status["profile"],
+            "token_file": status["token_file"],
+            "token_type": status["token_type"],
+            "token_present": status["token_present"],
+            "token_summary": status.get("summary") or {},
+        }
+
     def _authenticated_response(self, resp: requests.Response) -> requests.Response:
         resp.raise_for_status()
         if urlparse(resp.url).path == LOGIN_PATH:

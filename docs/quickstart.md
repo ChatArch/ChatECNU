@@ -18,7 +18,7 @@ ChatECNU 的 ChatEnv 类型是 `ecnu`。
 
 ```bash
 chatenv list
-chatenv new default -t ecnu -I --yes
+chatenv init -t ecnu -I
 ```
 
 常用变量：

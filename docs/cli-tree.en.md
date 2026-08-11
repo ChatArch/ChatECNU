@@ -32,7 +32,7 @@ ecnu
     └── update [--id VISITOR-ID] [--remark REMARK] [--password PASSWORD] [--dry-run] [--json] [--interactive]  # 更新访客备注和密码。
 ```
 
-Hidden `debug`, `selftest`, `home login-init/login-auto/session-info/cookie-header`, and `visitor lock` entries remain available for diagnostics/internal flows, but are not part of the main user tree.
+Hidden `debug`, `selftest`, `home login-init/login-auto/session-info`, and `visitor lock` entries remain available for diagnostics/internal flows, but are not part of the main user tree. `home cookie-header` is disabled to avoid raw cookie leaks.
 
 ## home {#home}
 

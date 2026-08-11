@@ -6,6 +6,7 @@
 chatecnu
 ├── cli.main                 # Click entrypoint; installation provides ecnu
 ├── config.ECNUConfig        # ChatEnv ecnu type
+├── ecnu.session_tokens      # ChatEnv token-store adapter for ECNU portal sessions
 ├── network_auth             # Campus-network auth_client wrapper
 └── ecnu.portal              # ECNU portal client
 ```
@@ -33,4 +34,4 @@ chatecnu
 
 ## ChatEnv Interface
 
-See [ChatEnv Variables](chatenv.md) for the full schema. Sensitive fields are masked by ChatEnv and command renderers.
+See [ChatEnv Variables](chatenv.md) for the full schema. Stable sensitive fields are managed by ChatEnv profiles; portal cookie/CSRF session state is managed by ChatEnv's token store, and command output shows only safe metadata.

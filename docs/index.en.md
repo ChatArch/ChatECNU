@@ -32,7 +32,7 @@ ChatECNU provides Python APIs and command-line tools for ECNU portal access and 
 
     ---
 
-    Store credentials, Cookies, and local network settings under the `ecnu` type.
+    Store credentials and local network settings under the `ecnu` type; portal sessions go to the runtime token store.
 
     [View variables](chatenv.md)
 

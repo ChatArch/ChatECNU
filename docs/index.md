@@ -32,7 +32,7 @@ ChatECNU 提供 ECNU 门户和校园网联网的 Python API 与命令行工具�
 
     ---
 
-    使用 `ecnu` 类型保存账号、密码、Cookie 和本机联网配置。
+    使用 `ecnu` 类型保存账号、密码和本机联网配置；门户会话写入 runtime token-store。
 
     [查看变量](chatenv.md)
 

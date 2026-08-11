@@ -63,6 +63,8 @@ ecnu home user
 ecnu home logout
 ```
 
+Portal sessions are stored in ChatEnv's runtime token store by default: `~/.chatarch/tokens/ECNU/<profile>.json`. `ecnu home status --json` reads back only safe metadata and never prints raw cookies or CSRF values. `chatenv token refresh ECNU <profile>` can run a non-interactive OCR-backed auto-login from the matching stable env profile, then lets ChatEnv write the runtime token-store record; it fails closed when SMS verification or CAPTCHA retries are required.
+
 Campus-network commands live under `net`:
 
 ```bash
@@ -72,6 +74,6 @@ ecnu net logout --auth-client /usr/local/bin/auth_client --username "$ECNU_USERN
 ecnu net ensure-login --auth-client /usr/local/bin/auth_client -I
 ```
 
-ChatECNU does not bundle `auth_client`. Use `--auth-client` or `ECNU_AUTH_CLIENT`. Portal access and campus-network access share `ECNU_USERNAME` / `ECNU_PASSWORD`.
+ChatECNU bundles the Linux x86_64 `auth_client` in the PyPI wheel/sdist. Use `--auth-client` or `ECNU_AUTH_CLIENT` to override it. Portal access and campus-network access share `ECNU_USERNAME` / `ECNU_PASSWORD`.
 
 Do not print or commit passwords, cookies, SMS codes, or session values.

@@ -18,7 +18,7 @@ ChatECNU registers the ChatEnv type `ecnu`.
 
 ```bash
 chatenv list
-chatenv new default -t ecnu -I --yes
+chatenv init -t ecnu -I
 ```
 
 Common variables:

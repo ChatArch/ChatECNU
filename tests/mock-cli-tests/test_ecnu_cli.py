@@ -113,7 +113,10 @@ def test_ecnu_mock_cli_runs_full_command_chain(monkeypatch, tmp_path):
     assert "Username: mock-user" in session
     session_json = invoke_ok(runner, ["home", "status", "--json"])
     assert session_json["cookies"]["PHPSESSID_8800"] == "***"
-    assert invoke_ok(runner, ["home", "cookie-header"]) == "PHPSESSID_8800=secret-cookie\n"
+    raw_cookie = runner.invoke(main, ["home", "cookie-header"])
+    assert raw_cookie.exit_code != 0
+    assert "secret-cookie" not in raw_cookie.output
+    assert "disabled" in raw_cookie.output.lower()
     assert "首页摘要" in invoke_ok(runner, ["home", "info"])
     assert "账号: mock-user" in invoke_ok(runner, ["home", "user"])
     assert "Authentication logs" in invoke_ok(runner, ["debug", "auth-log", "--limit", "1"])
@@ -147,7 +150,6 @@ def test_ecnu_mock_cli_runs_full_command_chain(monkeypatch, tmp_path):
         "login_init",
         "login",
         "login_auto",
-        "cookie_header",
         "home_summary",
         "user_info",
         "auth_logs",

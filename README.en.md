@@ -63,7 +63,7 @@ ecnu home user
 ecnu home logout
 ```
 
-Portal sessions are stored in ChatEnv's runtime token store by default: `~/.chatarch/tokens/ECNU/<profile>.json`. `ecnu home status --json` reads back only safe metadata and never prints raw cookies or CSRF values.
+Portal sessions are stored in ChatEnv's runtime token store by default: `~/.chatarch/tokens/ECNU/<profile>.json`. `ecnu home status --json` reads back only safe metadata and never prints raw cookies or CSRF values. `chatenv token refresh ECNU <profile>` can run a non-interactive OCR-backed auto-login from the matching stable env profile, then lets ChatEnv write the runtime token-store record; it fails closed when SMS verification or CAPTCHA retries are required.
 
 Campus-network commands live under `net`:
 

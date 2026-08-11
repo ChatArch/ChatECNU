@@ -63,7 +63,7 @@ ecnu home user
 ecnu home logout
 ```
 
-门户会话默认写入 ChatEnv runtime token-store：`~/.chatarch/tokens/ECNU/<profile>.json`；`ecnu home status --json` 只回读安全摘要，不输出原始 Cookie/CSRF。
+门户会话默认写入 ChatEnv runtime token-store：`~/.chatarch/tokens/ECNU/<profile>.json`；`ecnu home status --json` 只回读安全摘要，不输出原始 Cookie/CSRF。`chatenv token refresh ECNU <profile>` 可从同名 stable env profile 发起非交互 OCR 自动登录并由 ChatEnv 写入 runtime token-store；遇到短信验证码或验证码候选失败时会安全失败。
 
 校园网联网统一放在 `net` 下：
 

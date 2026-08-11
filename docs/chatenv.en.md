@@ -6,7 +6,7 @@ ChatECNU registers the ChatEnv type `ecnu`. Portal access and campus-network acc
 
 ```bash
 chatenv list
-chatenv new default -t ecnu -I --yes
+chatenv init -t ecnu -I
 ```
 
 `-e/--env` selects a ChatEnv profile for the current command without switching the global active profile. Explicit profile values take precedence to avoid cross-account leakage.
@@ -29,6 +29,9 @@ chatenv new default -t ecnu -I --yes
 ```bash
 ecnu -e default home status
 chatenv token status -s ECNU -p default
+chatenv token refresh ECNU default
 ecnu -e default net check --json
 ecnu -e default visitor default -I
 ```
+
+`chatenv token refresh ECNU <profile>` runs one non-interactive OCR-backed auto-login using `ECNU_USERNAME` / `ECNU_PASSWORD` from the matching stable env profile, then lets ChatEnv write the runtime token-store record. It fails closed when the portal requires SMS verification or rejects all CAPTCHA candidates; use `ecnu -e <profile> home login ...` first for interactive login.

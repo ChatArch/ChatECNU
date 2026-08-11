@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any
 
-from chatenv import TokenStore
+from chatenv import EnvStore, TokenRefreshResult, TokenStore, get_paths
 from chatenv.tokens import normalize_token_profile
+
+from chatecnu.config import ECNUConfig
 
 ECNU_SESSION_SERVICE = "ECNU"
 ECNU_PORTAL_TOKEN_TYPE = "portal_session"
@@ -35,6 +38,106 @@ def portal_session_summary(state: dict[str, Any]) -> dict[str, Any]:
 
 def _store(token_store: TokenStore | None = None, *, home: str | Path | None = None) -> TokenStore:
     return token_store or TokenStore(home=home)
+
+
+def _load_refresh_profile_values(
+    profile: str | None,
+    *,
+    home: str | Path | None = None,
+    env_store: EnvStore | None = None,
+) -> tuple[str, dict[str, str]]:
+    profile_name = normalize_token_profile(profile)
+    store = env_store or EnvStore(get_paths(home).envs_dir)
+    try:
+        profile_path = (
+            store.active_path(ECNUConfig)
+            if profile_name == "default"
+            else store.profile_path(ECNUConfig, profile_name)
+        )
+    except ValueError as exc:
+        raise ValueError(f"ECNU ChatEnv profile not found or invalid: {profile_name}") from exc
+    if not profile_path.exists():
+        raise ValueError(f"ECNU ChatEnv profile not found or invalid: {profile_name}")
+    try:
+        values = store.load_active(ECNUConfig) if profile_name == "default" else store.load_profile(ECNUConfig, profile_name)
+    except ValueError as exc:
+        raise ValueError(f"ECNU ChatEnv profile not found or invalid: {profile_name}") from exc
+    return profile_name, {str(key): str(value) for key, value in values.items() if value is not None}
+
+
+def _refresh_portal_client_class():
+    from .portal import PortalClient
+
+    return PortalClient
+
+
+def _default_base_url() -> str:
+    from .portal import BASE_URL
+
+    return BASE_URL
+
+
+def refresh_chatenv_token(
+    *,
+    service: str,
+    profile: str,
+    home: str | Path | None = None,
+    env_store: EnvStore | None = None,
+    token_store: TokenStore | None = None,
+) -> TokenRefreshResult:
+    """Refresh an ECNU portal session for ChatEnv's provider lifecycle.
+
+    The ECNU portal requires captcha OCR and can require SMS. This provider is
+    intentionally non-interactive: it runs the existing best-effort auto-login
+    path from a matching stable ChatEnv profile and fails closed if the portal
+    asks for SMS or rejects all captcha candidates. ChatEnv owns persistence
+    after this function returns, so the provider itself never writes the
+    token-store record.
+    """
+
+    del token_store  # ChatEnv persists the returned TokenRefreshResult.
+    if service != ECNU_SESSION_SERVICE:
+        raise ValueError(f"ChatECNU can refresh only {ECNU_SESSION_SERVICE} tokens")
+    profile_name, values = _load_refresh_profile_values(profile, home=home, env_store=env_store)
+    for key in ["ECNU_USERNAME", "ECNU_PASSWORD"]:
+        if not values.get(key):
+            raise ValueError(f"ECNU ChatEnv profile {profile_name} is missing {key}")
+
+    base_url = (values.get("ECNU_BASE_URL") or _default_base_url()).rstrip("/")
+    with TemporaryDirectory(prefix=f"chatecnu-refresh-{profile_name}-") as tmpdir:
+        tmp = Path(tmpdir)
+        client = _refresh_portal_client_class()(
+            base_url=base_url,
+            state_file=tmp / "ecnu-session.json",
+            cookie_header=None,
+            timeout=20,
+            token_store=None,
+            token_profile=profile_name,
+        )
+        result = client.login_auto(
+            values["ECNU_USERNAME"],
+            values["ECNU_PASSWORD"],
+            sms_code=None,
+            rounds=3,
+            topk=5,
+            captcha_path=tmp / "ecnu-login-captcha.png",
+        )
+        state = dict(getattr(client, "state", {}) or {})
+
+    if result.get("requires_sms"):
+        raise ValueError("ECNU portal refresh requires SMS verification and cannot run non-interactively")
+    if not result.get("success"):
+        raise ValueError("ECNU portal automatic refresh failed")
+    cookies = state.get("cookies")
+    if not isinstance(cookies, dict) or not cookies:
+        raise ValueError("ECNU portal refresh completed without cookies")
+    state.setdefault("base_url", base_url)
+    state.setdefault("username", values["ECNU_USERNAME"])
+    return TokenRefreshResult(
+        values=state,
+        token_type=ECNU_PORTAL_TOKEN_TYPE,
+        summary=portal_session_summary(state),
+    )
 
 
 def save_portal_session_state(
@@ -92,5 +195,6 @@ __all__ = [
     "portal_session_profile",
     "portal_session_status",
     "portal_session_summary",
+    "refresh_chatenv_token",
     "save_portal_session_state",
 ]

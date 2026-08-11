@@ -5,6 +5,7 @@
 ### Changed
 
 - 门户 Web/API 会话从 ChatEnv stable profile 中迁出，默认保存到 ChatEnv runtime token-store：`~/.chatarch/tokens/ECNU/<profile>.json`。
+- 将 ChatEnv 依赖下界提高到 `chatenv>=0.2.7,<0.3.0`，并注册 `chatenv.token_refreshers` provider：`chatenv token refresh ECNU <profile>` 使用同名 stable env profile 发起非交互 OCR 自动登录，由 ChatEnv 写 runtime token-store；短信验证码或验证码候选失败时 fail closed。
 - `ECNU_COOKIE` 不再作为 `ecnu` ChatEnv 类型的稳定变量；账号、密码、Base URL 和本机 `auth_client` 配置仍保留在 `envs/ECNU/<profile>.env`。
 - `ecnu home status --json` 现在返回 token-store 路径、profile、token 类型和脱敏会话摘要；原始 Cookie 值不会输出。
 - 隐藏的 `home cookie-header` raw Cookie 输出已禁用。

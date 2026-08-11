@@ -6,7 +6,7 @@ ChatECNU 注册的 ChatEnv 类型是 `ecnu`。门户和校园网共用同一个 
 
 ```bash
 chatenv list
-chatenv new default -t ecnu -I --yes
+chatenv init -t ecnu -I
 ```
 
 `-e/--env` 只选择本次命令使用的 ChatEnv profile，不切换全局 active profile。显式 profile 内的值优先，避免不同账号串用。
@@ -29,6 +29,9 @@ chatenv new default -t ecnu -I --yes
 ```bash
 ecnu -e default home status
 chatenv token status -s ECNU -p default
+chatenv token refresh ECNU default
 ecnu -e default net check --json
 ecnu -e default visitor default -I
 ```
+
+`chatenv token refresh ECNU <profile>` 使用同名 stable env profile 中的 `ECNU_USERNAME` / `ECNU_PASSWORD` 运行一次非交互 OCR 自动登录，并由 ChatEnv 写入 runtime token-store。若门户要求短信验证码或所有验证码候选失败，该 refresh 会安全失败；需要先用 `ecnu -e <profile> home login ...` 完成交互式登录。

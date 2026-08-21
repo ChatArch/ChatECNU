@@ -4,7 +4,7 @@
 
 ```text
 chatecnu
-├── cli.main                 # Click 入口；安装后提供 ecnu 命令
+├── cli.main                 # Click 入口；安装后提供 ecnu 与兼容别名 chatecnu
 ├── config.ECNUConfig        # ChatEnv ecnu 类型
 ├── ecnu.session_tokens      # ECNU 门户会话的 ChatEnv token-store adapter
 ├── network_auth             # 校园网 auth_client 包装
@@ -15,7 +15,7 @@ chatecnu
 
 | Python 接口 | 命令行映射 |
 | --- | --- |
-| `chatecnu.ecnu.cli.render_cli_tree()` | `ecnu --tree` |
+| `chatstyle.add_tree_option()` | `ecnu --tree` / `ecnu --tree-brief` |
 | `PortalClient.login_init()` | `ecnu home login-init`（隐藏） |
 | `PortalClient.login()` / `login_auto()` | `ecnu home login` |
 | `PortalClient.logout()` | `ecnu home logout` |

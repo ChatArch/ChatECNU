@@ -11,6 +11,7 @@ def test_help_lists_ecnu_commands():
 
     assert result.exit_code == 0
     assert "--tree" in result.output
+    assert "--tree-brief" in result.output
     assert "home" in result.output
     assert "net" in result.output
     assert "visitor" in result.output
@@ -23,11 +24,12 @@ def test_tree_option_renders_visible_registered_command_surface():
     assert result.exit_code == 0
     assert result.output.startswith("ecnu\n")
     assert "--tree" in result.output
+    assert "--tree-brief" in result.output
     assert "--version" in result.output
     assert "--env ENV-PROFILE" in result.output
     assert "├── home" in result.output
     assert "│   ├── info" in result.output
-    assert "│   ├── login" in result.output
+    assert "│   ├── login [--username USERNAME]" in result.output
     assert "│   ├── logout" in result.output
     assert "│   ├── status" in result.output
     assert "│   └── user" in result.output
@@ -47,6 +49,26 @@ def test_tree_option_renders_visible_registered_command_surface():
     assert "selftest" not in result.output
     assert "lock" not in result.output
     assert "hello" not in result.output
+
+
+def test_tree_brief_omits_parameter_signatures_but_keeps_nodes_and_descriptions():
+    result = CliRunner().invoke(main, ["--tree-brief"])
+
+    assert result.exit_code == 0
+    assert result.output.startswith("ecnu\n")
+    assert "├── --env  # ChatEnv 配置名。" in result.output
+    assert "│   ├── login  # 登录门户。" in result.output
+    assert "    └── update  # 更新访客备注和密码。" in result.output
+    assert "[--username USERNAME]" not in result.output
+    assert "ENV-PROFILE" not in result.output
+    assert "AUTH-CLIENT-PATH" not in result.output
+
+
+def test_tree_uses_canonical_root_through_chatecnu_compatibility_alias():
+    result = CliRunner().invoke(main, ["--tree-brief"], prog_name="chatecnu")
+
+    assert result.exit_code == 0
+    assert result.output.startswith("ecnu\n")
 
 
 def test_selftest_runs_without_network():

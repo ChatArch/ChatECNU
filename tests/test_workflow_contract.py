@@ -8,6 +8,7 @@ def test_ci_workflow_runs_matrix_and_installed_cli_smoke() -> None:
     assert "python -m pytest -q" in workflow
     assert "ecnu --version" in workflow
     assert "ecnu --tree" in workflow
+    assert "ecnu --tree-brief" in workflow
     assert "python -m build" in workflow
     assert "python -m twine check dist/*" in workflow
     assert "mkdocs build --strict" in workflow

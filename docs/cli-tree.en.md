@@ -4,13 +4,14 @@ This page lists only visible implemented commands. Hidden diagnostics are not pa
 
 ## Current Visible Command Tree
 
-The following tree comes from the current Click registry and can be read back with `ecnu --tree`:
+The following tree comes from the current Click registry and can be read back with `ecnu --tree`, which includes parameter signatures by default. `ecnu --tree-brief` keeps command nodes and descriptions while omitting parameter signatures:
 
 ```text
 ecnu
 ├── --help  # Show this message and exit.
-├── --version  # Show the installed ChatECNU version.
-├── --tree  # Print this registered command tree and exit.
+├── --version  # Show the version and exit.
+├── --tree  # Print the registered CLI tree and exit.
+├── --tree-brief  # Print the registered CLI tree without parameter signatures and exit.
 ├── --env ENV-PROFILE  # ChatEnv 配置名。
 ├── home  # ECNU 门户。
 │   ├── info [--json]  # 门户首页摘要。
@@ -31,6 +32,8 @@ ecnu
     ├── list [--json]  # 列出访客账号。
     └── update [--id VISITOR-ID] [--remark REMARK] [--password PASSWORD] [--dry-run] [--json] [--interactive]  # 更新访客备注和密码。
 ```
+
+The `chatecnu` command remains a compatibility alias and shares the same entry point as `ecnu`; both trees use the canonical `ecnu` root.
 
 Hidden `debug`, `selftest`, `home login-init/login-auto/session-info`, and `visitor lock` entries remain available for diagnostics/internal flows, but are not part of the main user tree. `home cookie-header` is disabled to avoid raw cookie leaks.
 

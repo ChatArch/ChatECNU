@@ -35,6 +35,7 @@ ECNU_PASSWORD=你的密码
 ```bash
 ecnu --version
 ecnu --tree
+ecnu --tree-brief
 ```
 
 ## 门户最小验证

@@ -4,13 +4,14 @@
 
 ## 当前可见命令树
 
-以下内容来自 `ecnu --tree` 的当前 Click 注册表输出：
+以下内容来自 `ecnu --tree` 的当前 Click 注册表输出，默认包含参数签名；`ecnu --tree-brief` 保留命令节点和说明，但省略参数签名：
 
 ```text
 ecnu
 ├── --help  # Show this message and exit.
-├── --version  # Show the installed ChatECNU version.
-├── --tree  # Print this registered command tree and exit.
+├── --version  # Show the version and exit.
+├── --tree  # Print the registered CLI tree and exit.
+├── --tree-brief  # Print the registered CLI tree without parameter signatures and exit.
 ├── --env ENV-PROFILE  # ChatEnv 配置名。
 ├── home  # ECNU 门户。
 │   ├── info [--json]  # 门户首页摘要。
@@ -31,6 +32,8 @@ ecnu
     ├── list [--json]  # 列出访客账号。
     └── update [--id VISITOR-ID] [--remark REMARK] [--password PASSWORD] [--dry-run] [--json] [--interactive]  # 更新访客备注和密码。
 ```
+
+`chatecnu` 命令作为兼容别名保留，与 `ecnu` 共享同一入口；两个入口的命令树都固定以规范名 `ecnu` 为根。
 
 隐藏的 `debug`、`selftest`、`home login-init/login-auto/session-info` 和 `visitor lock` 仍保留给诊断/内部流程，不作为主用户树展示；`home cookie-header` 为避免 raw Cookie 泄漏已禁用。
 

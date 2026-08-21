@@ -1,6 +1,7 @@
 # ChatECNU
 
 ChatECNU is a tool package for ECNU portal access and campus-network access. The package name remains `ChatECNU`; the daily command is `ecnu`.
+The installed `chatecnu` command remains a compatibility alias. Both entry points share the same Click object, whose tree uses the canonical `ecnu` root.
 
 ## Documentation
 
@@ -25,13 +26,14 @@ pip install "ChatECNU[captcha]"
 
 ## Command Shape
 
-The current command surface can be read back from the Click registry with `ecnu --tree`:
+The current command surface can be read back from the Click registry with `ecnu --tree`, which includes parameter signatures by default. `ecnu --tree-brief` keeps command nodes and descriptions while omitting parameter signatures:
 
 ```text
 ecnu
 ├── --help  # Show this message and exit.
-├── --version  # Show the installed ChatECNU version.
-├── --tree  # Print this registered command tree and exit.
+├── --version  # Show the version and exit.
+├── --tree  # Print the registered CLI tree and exit.
+├── --tree-brief  # Print the registered CLI tree without parameter signatures and exit.
 ├── --env ENV-PROFILE  # ChatEnv 配置名。
 ├── home  # ECNU 门户。
 │   ├── info [--json]  # 门户首页摘要。

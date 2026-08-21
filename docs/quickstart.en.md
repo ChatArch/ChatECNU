@@ -35,6 +35,7 @@ See [ChatEnv Variables](chatenv.md) for the full schema.
 ```bash
 ecnu --version
 ecnu --tree
+ecnu --tree-brief
 ```
 
 ## Portal Smoke

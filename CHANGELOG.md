@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.6
+
+### Changed
+
+- Migrate the top-level Click tree to `chatstyle.add_tree_option()`: `ecnu --tree` includes parameter signatures, while `ecnu --tree-brief` keeps nodes and descriptions without signatures.
+- Raise the shared runtime bounds to `chatstyle>=0.2.0,<0.3.0` and `chatenv>=0.2.10,<0.3.0`.
+- Keep `chatecnu` as a compatibility alias while using canonical `ecnu` as the tree root, with matching docs, package tests, and installed CLI smoke coverage.
+
 ## 0.2.5
 
 ### Changed

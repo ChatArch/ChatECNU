@@ -1,6 +1,7 @@
 # ChatECNU
 
 ChatECNU 是 ECNU 门户与校园网联网工具包。安装包名仍是 `ChatECNU`，日常命令主推 `ecnu`。
+`chatecnu` 安装命令作为兼容别名保留；两个入口共享同一 Click 对象，命令树固定以规范名 `ecnu` 为根。
 
 ## 文档入口
 
@@ -25,13 +26,14 @@ pip install "ChatECNU[captcha]"
 
 ## 命令结构
 
-ChatECNU 的命令面可用 `ecnu --tree` 从当前 Click 注册表直接回读：
+ChatECNU 的命令面可用 `ecnu --tree` 从当前 Click 注册表直接回读，默认包含参数签名；`ecnu --tree-brief` 保留命令节点和说明，但省略参数签名：
 
 ```text
 ecnu
 ├── --help  # Show this message and exit.
-├── --version  # Show the installed ChatECNU version.
-├── --tree  # Print this registered command tree and exit.
+├── --version  # Show the version and exit.
+├── --tree  # Print the registered CLI tree and exit.
+├── --tree-brief  # Print the registered CLI tree without parameter signatures and exit.
 ├── --env ENV-PROFILE  # ChatEnv 配置名。
 ├── home  # ECNU 门户。
 │   ├── info [--json]  # 门户首页摘要。

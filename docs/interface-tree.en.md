@@ -4,7 +4,7 @@
 
 ```text
 chatecnu
-├── cli.main                 # Click entrypoint; installation provides ecnu
+├── cli.main                 # Click entrypoint; installs ecnu and the chatecnu compatibility alias
 ├── config.ECNUConfig        # ChatEnv ecnu type
 ├── ecnu.session_tokens      # ChatEnv token-store adapter for ECNU portal sessions
 ├── network_auth             # Campus-network auth_client wrapper
@@ -15,7 +15,7 @@ chatecnu
 
 | Python API | Command mapping |
 | --- | --- |
-| `chatecnu.ecnu.cli.render_cli_tree()` | `ecnu --tree` |
+| `chatstyle.add_tree_option()` | `ecnu --tree` / `ecnu --tree-brief` |
 | `PortalClient.login_init()` | `ecnu home login-init` (hidden) |
 | `PortalClient.login()` / `login_auto()` | `ecnu home login` |
 | `PortalClient.logout()` | `ecnu home logout` |

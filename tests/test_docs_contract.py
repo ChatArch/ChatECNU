@@ -19,7 +19,8 @@ def test_mkdocs_material_renderer_and_package_metadata_contract() -> None:
 def test_public_docs_keep_live_cli_tree_contract() -> None:
     required = [
         "ecnu",
-        "├── --tree  # Print this registered command tree and exit.",
+        "├── --tree  # Print the registered CLI tree and exit.",
+        "├── --tree-brief  # Print the registered CLI tree without parameter signatures and exit.",
         "├── home  # ECNU 门户。",
         "├── net  # 校园网联网。",
         "└── visitor  # 访客账号。",

@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `ecnu net install` / `chatecnu net install` and importable `install_network_auth()` / `state_paths()` APIs for explicit offline Linux x86_64 helper/config setup (no pip post-install hooks, login, daemon or network download).
+- Managed ChatArch service paths with safe legacy symlinks, byte-preserving reuse, backed-up explicit `--force`, truly write-free `--dry-run`, endpoint options, and path/action JSON readback.
+- EnvStore-only updates of the two network path keys, credential preservation and named-profile isolation; Python 3.10 uses a bounded conditional `tomli` dependency.
+- Installer filesystem/platform/profile/CLI/docs regression tests; bilingual setup and API docs aligned with the registered command tree.
+
 ## 0.2.6
 
 ### Changed

@@ -368,6 +368,43 @@ def network_auth_group() -> None:
     """校园网联网。"""
 
 
+@network_auth_group.command(name="install")
+@click.option("--host", default="login.ecnu.edu.cn", show_default=True, help="认证主机（可带 :port，不含 scheme/path）。")
+@click.option("--ac-id", default=1, show_default=True, type=click.IntRange(min=1), help="接入控制器 acid。")
+@click.option("--campus-url", default="", help="campus_url，默认空字符串。")
+@click.option("--campus-postfix", default="", help="campus_postfix，默认空字符串。")
+@click.option("--force", is_flag=True, help="备份后显式替换现有 helper/config/兼容入口。")
+@click.option("--dry-run", is_flag=True, help="只检查并输出计划，不写任何文件。")
+@click.option("--json", "json_output", is_flag=True, help="输出安全路径、来源和动作 JSON。")
+@click.pass_context
+def network_auth_install(
+    ctx: click.Context, host: str, ac_id: int, campus_url: str,
+    campus_postfix: str, force: bool, dry_run: bool, json_output: bool,
+) -> None:
+    """离线准备联网工具与设置，不登录。"""
+    from chatecnu.network_install import NetworkInstallError, install_network_auth
+
+    config = ctx.find_root().obj or {}
+    if config.get("env_file"):
+        raise click.UsageError("net install does not accept --env-file; use -e/--env for a ChatEnv profile.")
+    try:
+        result = install_network_auth(
+            env_profile=config.get("env_profile"), host=host, ac_id=ac_id,
+            campus_url=campus_url, campus_postfix=campus_postfix,
+            force=force, dry_run=dry_run,
+        )
+    except (NetworkInstallError, OSError) as exc:
+        if json_output:
+            echo_json({"success": False, "dry_run": dry_run, "error": str(exc), "actions": []})
+            raise click.exceptions.Exit(1) from exc
+        raise click.ClickException(str(exc)) from exc
+    if json_output:
+        echo_json(result.to_dict())
+    else:
+        click.echo("仅预览，未写入文件。" if dry_run else "联网工具准备完成（未登录）。")
+        click.echo(f"auth_client: {result.auth_client}\nsetting_file: {result.setting_file}\nChatEnv: {result.env_file}")
+
+
 @network_auth_group.command(name="check")
 @click.option("--auth-client", "auth_client_path", default=None, help="auth_client 路径。")
 @click.option("--setting-file", default=None, help="设置文件。")

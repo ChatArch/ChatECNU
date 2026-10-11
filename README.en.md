@@ -24,6 +24,23 @@ For CAPTCHA OCR support:
 pip install "ChatECNU[captcha]"
 ```
 
+### Explicit campus-network setup
+
+`pip install` does not change user files. On Linux x86_64, explicitly run the offline installer (`chatecnu net install` and `ecnu net install` are the same entrypoint):
+
+```bash
+ecnu net install --dry-run --json
+ecnu net install --json
+# Update only this ChatEnv profile without activating it:
+ecnu -e campus net install --json
+# Customize a new endpoint configuration; never pass credentials or tokens:
+ecnu net install --host login.ecnu.edu.cn --ac-id 1 --campus-url "" --campus-postfix ""
+```
+
+Managed files default to `$CHATARCH_HOME/chatecnu/` (`~/.chatarch/chatecnu/` when unset): `bin/auth_client` and `config/auth-setting.toml`. The legacy entries `~/.local/bin/auth_client` and `~/.auth-setting` are thin symlinks. Usable existing legacy files are preserved byte-for-byte and selected as-is, never relocated; repeated installation does not rewrite files. Endpoint options affect newly generated settings only; replacing existing settings requires explicit `--force`. Replaced files/symlinks are backed up under `chatecnu/backups/<id>/`; unknown symlink targets stay untouched, and directory conflicts always fail.
+
+`--dry-run` creates no directories or ChatEnv profiles. `--json` reads back paths, sources and actions, not profile values. Only `ECNU_AUTH_CLIENT` / `ECNU_AUTH_SETTING_FILE` are updated through EnvStore; credentials and other values are preserved. No login, restart, daemon installation or download occurs. Mac, Windows and Linux ARM fail before writes, including dry-run.
+
 ## Command Shape
 
 The current command surface can be read back from the Click registry with `ecnu --tree`, which includes parameter signatures by default. `ecnu --tree-brief` keeps command nodes and descriptions while omitting parameter signatures:
@@ -44,6 +61,7 @@ ecnu
 ├── net  # 校园网联网。
 │   ├── check [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--json]  # 检查在线状态。
 │   ├── ensure-login [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--password PASSWORD] [--allow-argv-password] [--json] [--interactive]  # 离线时登录。
+│   ├── install [--host HOST] [--ac-id AC-ID] [--campus-url CAMPUS-URL] [--campus-postfix CAMPUS-POSTFIX] [--force] [--dry-run] [--json]  # 离线准备联网工具与设置，不登录。
 │   ├── login [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--password PASSWORD] [--allow-argv-password] [--json] [--interactive]  # 登录。
 │   └── logout [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--json] [--interactive]  # 退出校园网。
 └── visitor  # 访客账号。
@@ -70,10 +88,10 @@ Portal sessions are stored in ChatEnv's runtime token store by default: `~/.chat
 Campus-network commands live under `net`:
 
 ```bash
-ecnu net check --auth-client /usr/local/bin/auth_client --json
-ecnu net login --auth-client /usr/local/bin/auth_client -I
-ecnu net logout --auth-client /usr/local/bin/auth_client --username "$ECNU_USERNAME" -I
-ecnu net ensure-login --auth-client /usr/local/bin/auth_client -I
+ecnu net check --json
+ecnu net login -I --allow-argv-password
+ecnu net logout -I
+ecnu net ensure-login -I --allow-argv-password
 ```
 
 ChatECNU bundles the Linux x86_64 `auth_client` in the PyPI wheel/sdist. Use `--auth-client` or `ECNU_AUTH_CLIENT` to override it. Portal access and campus-network access share `ECNU_USERNAME` / `ECNU_PASSWORD`.

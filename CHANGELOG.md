@@ -8,6 +8,7 @@
 - Managed ChatArch service paths with safe legacy symlinks, byte-preserving reuse, backed-up explicit `--force`, truly write-free `--dry-run`, endpoint options, and path/action JSON readback.
 - EnvStore-only updates of the two network path keys, credential preservation and named-profile isolation; Python 3.10 uses a bounded conditional `tomli` dependency.
 - Installer filesystem/platform/profile/CLI/docs regression tests; bilingual setup and API docs aligned with the registered command tree.
+- Require ChatNet 0.2.4+ so its ChatStyle dependency is compatible with the shared 0.2 runtime and normal pip resolution.
 
 ## 0.2.6
 

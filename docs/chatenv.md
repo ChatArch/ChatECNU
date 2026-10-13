@@ -11,6 +11,8 @@ chatenv init -t ecnu -I
 
 `-e/--env` 只选择本次命令使用的 ChatEnv profile，不切换全局 active profile。显式 profile 内的值优先，避免不同账号串用。
 
+`ecnu net install` 通过 EnvStore 只更新 `ECNU_AUTH_CLIENT` 和 `ECNU_AUTH_SETTING_FILE`，保留其他已存值。不带 `-e` 更新 active `envs/ECNU/.env`；`ecnu -e campus net install` 只写 `envs/ECNU/campus.env`，active 不变，不回填进程环境凭据。`--dry-run` 不写 profile；安装器不接受隐藏的 `--env-file` override。
+
 ## 变量
 
 | 变量 | 用途 | 敏感 |

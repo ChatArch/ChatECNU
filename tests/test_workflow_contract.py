@@ -33,6 +33,16 @@ def test_publish_workflow_uses_oidc_with_main_release_guard() -> None:
     assert "https://pypi.org/pypi/ChatECNU/" in workflow
 
 
+def test_manual_publish_requires_a_tag_and_cannot_bypass_release_guards() -> None:
+    workflow = Path(".github/workflows/publish.yml").read_text(encoding="utf-8")
+
+    assert 'test "${GITHUB_REF_TYPE}" = "tag"' in workflow
+    assert "if: github.event_name == 'push'" not in workflow
+    assert workflow.index("Require release tag reference") < workflow.index("Resolve package version")
+    assert workflow.index("Check tag matches package version") < workflow.index("Publish to PyPI (OIDC)")
+    assert workflow.index("Check release commit is on default branch") < workflow.index("Publish to PyPI (OIDC)")
+
+
 def test_docs_workflows_target_chatarch_pages() -> None:
     preview = Path(".github/workflows/preview.yaml").read_text(encoding="utf-8")
     deploy = Path(".github/workflows/deploy.yaml").read_text(encoding="utf-8")

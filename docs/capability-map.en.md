@@ -7,6 +7,7 @@
 | Portal login | Implemented | `ecnu home login` | Creates an ECNU Web/API session |
 | Portal reads | Implemented | `ecnu home info/status/user` | Requires a logged-in portal session in the token store |
 | Visitor accounts | Implemented | `ecnu visitor ...` | Mutation commands support `--dry-run` |
+| Offline network setup | Implemented | `ecnu net install` | Native Linux x86_64; no login/download; dry-run and backed-up force |
 | Network check | Implemented | `ecnu net check` | Does not need a password |
 | Campus network access | Implemented | `ecnu net login/logout/ensure-login` | Bundles Linux x86_64 `auth_client`; refuses argv passwords by default |
 | ChatEnv config | Implemented | `ecnu` type | Passwords live in stable env; portal sessions/cookies live in the runtime token store |

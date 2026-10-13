@@ -24,6 +24,23 @@ pip install ChatECNU
 pip install "ChatECNU[captcha]"
 ```
 
+### 显式准备校园网工具
+
+`pip install` 不会改用户文件；Linux x86_64 需显式执行下面的离线安装器（`chatecnu net install` 与 `ecnu net install` 为同一入口）：
+
+```bash
+ecnu net install --dry-run --json
+ecnu net install --json
+# 只更新指定 ChatEnv profile，不激活它：
+ecnu -e campus net install --json
+# 新配置可定制认证端点；不要传账号、密码或 token：
+ecnu net install --host login.ecnu.edu.cn --ac-id 1 --campus-url "" --campus-postfix ""
+```
+
+实体默认在 `$CHATARCH_HOME/chatecnu/`（未设置时 `~/.chatarch/chatecnu/`）：`bin/auth_client`、`config/auth-setting.toml`；兼容入口为 `~/.local/bin/auth_client`、`~/.auth-setting` 薄链接。既有可用 legacy 文件会原样保留并被选用，不迁移、不覆盖；重复安装不重写。端点选项只影响新生成的设置；修改既有设置须显式 `--force`。替换前原文件/链接备份到 `chatecnu/backups/<id>/`，未知链接目标不修改；目录冲突始终失败。
+
+`--dry-run` 连目录和 ChatEnv profile 都不创建；`--json` 回读路径、来源与动作，不输出 profile 值。只通过 EnvStore 更新 `ECNU_AUTH_CLIENT` / `ECNU_AUTH_SETTING_FILE`，保留凭据和其他值。安装器不登录、不重启、不安装 daemon、无下载；Mac、Windows、Linux ARM 在写入前失败（包括 dry-run）。
+
 ## 命令结构
 
 ChatECNU 的命令面可用 `ecnu --tree` 从当前 Click 注册表直接回读，默认包含参数签名；`ecnu --tree-brief` 保留命令节点和说明，但省略参数签名：
@@ -44,6 +61,7 @@ ecnu
 ├── net  # 校园网联网。
 │   ├── check [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--json]  # 检查在线状态。
 │   ├── ensure-login [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--password PASSWORD] [--allow-argv-password] [--json] [--interactive]  # 离线时登录。
+│   ├── install [--host HOST] [--ac-id AC-ID] [--campus-url CAMPUS-URL] [--campus-postfix CAMPUS-POSTFIX] [--force] [--dry-run] [--json]  # 离线准备联网工具与设置，不登录。
 │   ├── login [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--password PASSWORD] [--allow-argv-password] [--json] [--interactive]  # 登录。
 │   └── logout [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--json] [--interactive]  # 退出校园网。
 └── visitor  # 访客账号。

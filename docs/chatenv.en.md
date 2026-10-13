@@ -11,6 +11,8 @@ chatenv init -t ecnu -I
 
 `-e/--env` selects a ChatEnv profile for the current command without switching the global active profile. Explicit profile values take precedence to avoid cross-account leakage.
 
+`ecnu net install` updates only `ECNU_AUTH_CLIENT` and `ECNU_AUTH_SETTING_FILE` through EnvStore, retaining every other stored value. Without `-e`, it updates the active `envs/ECNU/.env`; with `ecnu -e campus net install`, only `envs/ECNU/campus.env` changes and the active file stays untouched. Process credentials are not backfilled. `--dry-run` performs no profile writes. The hidden `--env-file` override is not accepted by the installer.
+
 ## Variables
 
 | Variable | Purpose | Sensitive |

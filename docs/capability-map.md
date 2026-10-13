@@ -7,6 +7,7 @@
 | 门户登录 | 已实现 | `ecnu home login` | 建立 ECNU Web/API 会话 |
 | 门户读取 | 已实现 | `ecnu home info/status/user` | 依赖 token-store 中的已登录门户会话 |
 | 访客账号 | 已实现 | `ecnu visitor ...` | 修改类命令支持 `--dry-run` |
+| 离线联网准备 | 已实现 | `ecnu net install` | Native Linux x86_64；不登录/下载；dry-run 与 force 备份 |
 | 校园网在线检查 | 已实现 | `ecnu net check` | 不需要密码 |
 | 校园网联网 | 已实现 | `ecnu net login/logout/ensure-login` | 内置 Linux x86_64 `auth_client`；默认拒绝 argv 密码 |
 | ChatEnv 配置 | 已实现 | `ecnu` 类型 | 密码在 stable env，门户会话/Cookie 在 runtime token-store |

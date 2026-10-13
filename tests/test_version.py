@@ -2,7 +2,7 @@ from chatecnu import __version__
 
 
 def test_version_present():
-    assert __version__ == "0.2.6"
+    assert __version__ == "0.2.7"
 
 
 def test_cli_version_option():
@@ -12,7 +12,7 @@ def test_cli_version_option():
     result = CliRunner().invoke(main, ["--version"])
 
     assert result.exit_code == 0
-    assert "0.2.6" in result.output
+    assert result.output.strip().endswith(", version 0.2.7")
 
 
 def test_shared_runtime_dependencies_and_refresh_provider_entry_point_declared():
@@ -21,6 +21,7 @@ def test_shared_runtime_dependencies_and_refresh_provider_entry_point_declared()
     pyproject = (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(
         encoding="utf-8"
     )
+    assert '"ChatNet>=0.2.4,<0.3.0"' in pyproject
     assert '"chatstyle>=0.2.0,<0.3.0"' in pyproject
     assert '"chatenv>=0.2.10,<0.3.0"' in pyproject
     assert 'ecnu = "chatecnu.cli:main"' in pyproject

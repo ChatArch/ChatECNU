@@ -13,9 +13,10 @@ dependencies = [
     "click>=8.0",
     "chatstyle>=0.2.0,<0.3.0",
     "chatenv>=0.2.10,<0.3.0",
-    "ChatNet>=0.2.0,<0.3.0",
+    "ChatNet>=0.2.4,<0.3.0",
     "requests>=2.0",
     "pycryptodome>=3.0",
+    "tomli>=2.0,<3.0; python_version < '3.11'",
 ]
 authors = [{name = "ChatArch", email = "1073853456@qq.com"}]
 keywords = ["chatecnu", "chatarch", "ecnu", "campus", "portal"]

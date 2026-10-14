@@ -26,7 +26,7 @@ pip install "ChatECNU[captcha]"
 
 ### 显式准备校园网工具
 
-`pip install` 不会改用户文件；Linux x86_64 需显式执行下面的离线安装器（`chatecnu net install` 与 `ecnu net install` 为同一入口）：
+`pip install` 不会改用户文件。默认 Python 后端无需安装 auth_client；下面的显式离线安装器只准备 Linux x86_64 binary 兼容后端：
 
 ```bash
 ecnu net install --dry-run --json
@@ -89,11 +89,11 @@ ecnu home logout
 
 ```bash
 ecnu net check --json
-ecnu net login -I --allow-argv-password
+ecnu net login -I
 ecnu net logout -I
-ecnu net ensure-login -I --allow-argv-password
+ecnu net ensure-login -I
 ```
 
-ChatECNU 的 PyPI wheel/sdist 内置 Linux x86_64 `auth_client`，默认 `ecnu net ...` 会优先使用该内置二进制；如需覆盖，可用 `--auth-client` 或 `ECNU_AUTH_CLIENT` 指定路径。账号密码使用同一组 `ECNU_USERNAME` / `ECNU_PASSWORD`。`net check` 会显示当前 `online/account/username`；`net logout` 未提供用户名时会先从 `auth_client check` 的 `Username=...` 自动提取。
+默认 `ECNU_NETWORK_BACKEND=python`：直接执行 SRun HTTP 协议，不运行 `auth_client`，不通过外部进程 argv 传密码。复用 ChatEnv 的 `ECNU_USERNAME` / `ECNU_PASSWORD` 及原生 `ECNU_NETWORK_BASE_URL` / `ECNU_NETWORK_AC_ID`；Python 仅在显式 `--setting-file` 时导入旧格式；登录/退出后重新检查实际在线状态，JSON 返回 `backend=python`。只有显式选择 `ECNU_NETWORK_BACKEND=binary` 才使用旧二进制，且登录仍需 `--allow-argv-password`；`--auth-client` / `ECNU_AUTH_CLIENT` 也仅作用于 binary。默认 Python 路径不需要 `net install`。
 
 敏感值（密码、Cookie、短信码、会话）不要打印或提交。

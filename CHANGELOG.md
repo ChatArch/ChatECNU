@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.9 - 2026-10-15
+
+- 校园网默认改为纯 Python HTTP 后端，直接实现 check/login/logout/ensure-login；不运行 auth_client，不需要密码 argv opt-in。
+- 默认Python无需auth_client或.auth-setting；原生端点通过ECNU_NETWORK_BASE_URL/ECNU_NETWORK_AC_ID读取，旧设置格式仅显式导入。
+- 增加 ECNU_NETWORK_BACKEND=python|binary；旧二进制仅显式选择，保留原有 argv 安全门禁。复用现有 ChatEnv 凭据与设置文件。
+- 原程序差分验证的普通 MD5、XEncode、自定义 Base64 与 SHA1；认证后重新检查在线状态，同主机 HTTPS 升级保持参数不变，拒绝跨主机跳转并屏蔽敏感请求/响应。
+
 ## 0.2.8
 
 ### Fixed

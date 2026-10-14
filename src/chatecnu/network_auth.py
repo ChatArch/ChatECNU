@@ -97,6 +97,7 @@ class NetworkAuthResult:
     account: str | None = None
     username: str | None = None
     skipped: bool = False
+    backend: str = "binary"
 
     def to_dict(self) -> dict[str, object]:
         """Return a JSON-serializable, secret-safe result mapping."""

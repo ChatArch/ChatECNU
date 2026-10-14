@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.8
+
+### Fixed
+
+- Require `chatenv>=0.2.13,<0.3.0` so normal installs receive full default masking of ECNU password fields, including existing-value hints in `chatenv init`.
+- Verify all ECNU password fields use the shared sensitive-field masking behavior. Existing network login/logout semantics and the explicit legacy argv-password safety gate remain unchanged.
+
 ## 0.2.7
 
 ### Added

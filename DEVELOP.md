@@ -2,7 +2,7 @@
 
 ## CLI Rules
 
-- Use `chatstyle>=0.2.0,<0.3.0` and `chatenv>=0.2.10,<0.3.0` as the canonical CLI interaction runtime.
+- Use `chatstyle>=0.2.0,<0.3.0` and `chatenv>=0.2.13,<0.3.0` as the canonical CLI interaction runtime.
 - Prefer `CommandSchema`, `CommandField`, `add_interactive_option()`, and `resolve_command_inputs()` for new commands.
 - Attach `chatstyle.add_tree_option()` to the top-level Click group; `--tree` includes parameter signatures and `--tree-brief` omits them.
 - Missing required args should auto-enter interactive mode when recoverable.

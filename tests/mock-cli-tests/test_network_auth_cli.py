@@ -256,7 +256,8 @@ def test_network_auth_cli_exits_nonzero_on_failed_auth_client_result(monkeypatch
     assert payload["redacted_command"].endswith("-p <redacted> -c auth_setting")
 
 
-def test_network_auth_cli_refuses_argv_password_by_default_without_spawning():
+def test_network_auth_cli_refuses_argv_password_by_default_without_spawning(monkeypatch):
+    monkeypatch.setenv("ECNU_NETWORK_BACKEND", "binary")
     result = CliRunner().invoke(
         main,
         [

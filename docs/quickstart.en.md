@@ -14,7 +14,7 @@ pip install "ChatECNU[captcha]"
 
 ### Explicit campus-network setup
 
-`pip install` does not change user files. On Linux x86_64, explicitly run the offline installer (`chatecnu net install` and `ecnu net install` are the same entrypoint):
+`pip install` does not modify user files. The default Python backend needs no auth_client installation. The following explicit offline installer prepares only the Linux x86_64 binary compatibility backend:
 
 ```bash
 ecnu net install --dry-run --json
@@ -68,7 +68,7 @@ ecnu home user
 
 ```bash
 ecnu net check --json
-ecnu net ensure-login -I --allow-argv-password
+ecnu net ensure-login -I
 ```
 
-`check` does not need a password. `login` / `ensure-login` do not pass passwords through external process argv by default. Use `--allow-argv-password` only after accepting local process-list exposure.
+`ECNU_NETWORK_BACKEND=python` is the default: SRun HTTP runs directly, without `auth_client` or password-bearing child-process argv. It reuses ChatEnv `ECNU_USERNAME` / `ECNU_PASSWORD` and native `ECNU_NETWORK_BASE_URL` / `ECNU_NETWORK_AC_ID`; Python imports legacy settings only with explicit `--setting-file`; login/logout verify the resulting online state and JSON reports `backend=python`. Only explicit `ECNU_NETWORK_BACKEND=binary` uses the legacy binary, where login still requires `--allow-argv-password`; `--auth-client` / `ECNU_AUTH_CLIENT` apply only to binary. The default Python path does not require `net install`.

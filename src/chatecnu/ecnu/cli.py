@@ -22,6 +22,7 @@ from chatstyle import (
 
 from chatecnu import __version__
 from chatecnu.config import ECNUConfig
+from chatecnu.network_http import PythonNetworkAuthClient
 from chatecnu.network_auth import (
     DEFAULT_SETTING_FILE,
     NetworkAuthClient,
@@ -407,7 +408,7 @@ def network_auth_install(
 
 @network_auth_group.command(name="check")
 @click.option("--auth-client", "auth_client_path", default=None, help="auth_client 路径。")
-@click.option("--setting-file", default=None, help="设置文件。")
+@click.option("--setting-file", default=None, help="显式设置文件；Python默认使用ChatEnv原生网络配置。")
 @click.option("--json", "json_output", is_flag=True, help="输出 JSON。")
 @click.pass_context
 def network_auth_check(
@@ -429,13 +430,13 @@ def network_auth_check(
 
 @network_auth_group.command(name="login")
 @click.option("--auth-client", "auth_client_path", default=None, help="auth_client 路径。")
-@click.option("--setting-file", default=None, help="设置文件。")
+@click.option("--setting-file", default=None, help="显式设置文件；Python默认使用ChatEnv原生网络配置。")
 @click.option("--username", default=None, help="ECNU 用户名。")
 @click.option("--password", default=None, help="ECNU 密码。")
 @click.option(
     "--allow-argv-password",
     is_flag=True,
-    help="危险：密码放入 argv。",
+    help="仅binary兼容后端：接受密码放入argv的风险；默认Python后端无需此选项。",
 )
 @click.option("--json", "json_output", is_flag=True, help="输出 JSON。")
 @add_interactive_option
@@ -470,7 +471,7 @@ def network_auth_login(
 
 @network_auth_group.command(name="logout")
 @click.option("--auth-client", "auth_client_path", default=None, help="auth_client 路径。")
-@click.option("--setting-file", default=None, help="设置文件。")
+@click.option("--setting-file", default=None, help="显式设置文件；Python默认使用ChatEnv原生网络配置。")
 @click.option("--username", default=None, help="ECNU 用户名。")
 @click.option("--json", "json_output", is_flag=True, help="输出 JSON。")
 @add_interactive_option
@@ -502,13 +503,13 @@ def network_auth_logout(
 
 @network_auth_group.command(name="ensure-login")
 @click.option("--auth-client", "auth_client_path", default=None, help="auth_client 路径。")
-@click.option("--setting-file", default=None, help="设置文件。")
+@click.option("--setting-file", default=None, help="显式设置文件；Python默认使用ChatEnv原生网络配置。")
 @click.option("--username", default=None, help="ECNU 用户名。")
 @click.option("--password", default=None, help="ECNU 密码。")
 @click.option(
     "--allow-argv-password",
     is_flag=True,
-    help="危险：密码放入 argv。",
+    help="仅binary兼容后端：接受密码放入argv的风险；默认Python后端无需此选项。",
 )
 @click.option("--json", "json_output", is_flag=True, help="输出 JSON。")
 @add_interactive_option
@@ -738,22 +739,43 @@ def make_network_auth_client(
     setting_file: str | None,
     allow_argv_password: bool = False,
     prefer_loaded_chatenv: bool = False,
-) -> NetworkAuthClient:
-    configured_auth_client = auth_client_path or resolve_ecnu_config_value(
-        "ECNU_AUTH_CLIENT",
-        ECNUConfig.ECNU_AUTH_CLIENT,
+) -> NetworkAuthClient | PythonNetworkAuthClient:
+    backend = resolve_ecnu_config_value(
+        "ECNU_NETWORK_BACKEND", ECNUConfig.ECNU_NETWORK_BACKEND,
         prefer_loaded_chatenv=prefer_loaded_chatenv,
-    )
-    resolved_auth_client = resolve_auth_client_path(configured_auth_client)
+    ) or "python"
+    if backend not in {"python", "binary"}:
+        raise click.UsageError("ECNU_NETWORK_BACKEND must be python or binary.")
+    if backend == "python":
+        if auth_client_path:
+            raise click.UsageError("--auth-client requires explicit ECNU_NETWORK_BACKEND=binary.")
+        try:
+            if setting_file:
+                return PythonNetworkAuthClient.from_setting_file(setting_file)
+            base_url = resolve_ecnu_config_value(
+                "ECNU_NETWORK_BASE_URL", ECNUConfig.ECNU_NETWORK_BASE_URL,
+                prefer_loaded_chatenv=prefer_loaded_chatenv,
+            )
+            acid = resolve_ecnu_config_value(
+                "ECNU_NETWORK_AC_ID", ECNUConfig.ECNU_NETWORK_AC_ID,
+                prefer_loaded_chatenv=prefer_loaded_chatenv,
+            )
+            if not isinstance(acid, str) or not re.fullmatch(r"[0-9]+", acid):
+                raise ValueError("Network AC ID must be a positive integer")
+            return PythonNetworkAuthClient(base_url, acid=int(acid))
+        except ValueError as exc:
+            raise click.ClickException(str(exc)) from None
     resolved_setting_file = setting_file or resolve_ecnu_config_value(
-        "ECNU_AUTH_SETTING_FILE",
-        ECNUConfig.ECNU_AUTH_SETTING_FILE,
+        "ECNU_AUTH_SETTING_FILE", ECNUConfig.ECNU_AUTH_SETTING_FILE,
         prefer_loaded_chatenv=prefer_loaded_chatenv,
     ) or DEFAULT_SETTING_FILE
+    configured_auth_client = auth_client_path or resolve_ecnu_config_value(
+        "ECNU_AUTH_CLIENT", ECNUConfig.ECNU_AUTH_CLIENT,
+        prefer_loaded_chatenv=prefer_loaded_chatenv,
+    )
     return NetworkAuthClient(
-        auth_client_path=resolved_auth_client,
-        setting_file=resolved_setting_file,
-        allow_argv_password=allow_argv_password,
+        auth_client_path=resolve_auth_client_path(configured_auth_client),
+        setting_file=resolved_setting_file, allow_argv_password=allow_argv_password,
     )
 
 

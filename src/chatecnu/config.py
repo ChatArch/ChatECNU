@@ -18,6 +18,9 @@ class ECNUConfig(BaseEnvConfig):
     ECNU_VISITOR_PASSWORD1 = EnvField("ECNU_VISITOR_PASSWORD1", desc="默认访客账号 m1 密码。", is_sensitive=True)
     ECNU_VISITOR_PASSWORD2 = EnvField("ECNU_VISITOR_PASSWORD2", desc="默认访客账号 m2 密码。", is_sensitive=True)
     ECNU_VISITOR_REMARK = EnvField("ECNU_VISITOR_REMARK", default="default", desc="默认访客账号备注。")
+    ECNU_NETWORK_BASE_URL = EnvField("ECNU_NETWORK_BASE_URL", default="https://login.ecnu.edu.cn", desc="校园网认证基地址（不同于门户管理ECNU_BASE_URL）。")
+    ECNU_NETWORK_AC_ID = EnvField("ECNU_NETWORK_AC_ID", default="1", desc="校园网接入控制器AC ID，正整数。")
+    ECNU_NETWORK_BACKEND = EnvField("ECNU_NETWORK_BACKEND", default="python", desc="校园网后端：python（默认）或显式binary兼容。")
     ECNU_AUTH_CLIENT = EnvField("ECNU_AUTH_CLIENT", default="auth_client", desc="auth_client 路径。")
     ECNU_AUTH_SETTING_FILE = EnvField("ECNU_AUTH_SETTING_FILE", desc="auth_client 设置文件。")
 

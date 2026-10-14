@@ -20,8 +20,11 @@ chatenv init -t ecnu -I
 | `ECNU_USERNAME` | 门户和校园网共用用户名 | 否 |
 | `ECNU_PASSWORD` | 门户和校园网共用密码 | 是 |
 | `ECNU_BASE_URL` | 门户基地址 | 否 |
-| `ECNU_AUTH_CLIENT` | 可选 auth_client 覆盖路径；默认使用 PyPI 内置二进制 | 否 |
-| `ECNU_AUTH_SETTING_FILE` | 可选设置文件 | 否 |
+| `ECNU_NETWORK_BASE_URL` | 校园网认证基地址，默认 `https://login.ecnu.edu.cn`，不同于门户管理地址 | 否 |
+| `ECNU_NETWORK_AC_ID` | 校园网AC ID，默认 `1` | 否 |
+| `ECNU_NETWORK_BACKEND` | 默认 `python`；显式 `binary` 才用兼容二进制 | 否 |
+| `ECNU_AUTH_CLIENT` | binary 后端可选二进制路径 | 否 |
+| `ECNU_AUTH_SETTING_FILE` | binary 设置文件；默认 Python 不读取 | 否 |
 | `ECNU_VISITOR_PASSWORD1` | 默认访客账号一密码 | 是 |
 | `ECNU_VISITOR_PASSWORD2` | 默认访客账号二密码 | 是 |
 | `ECNU_VISITOR_REMARK` | 默认访客备注 | 否 |

@@ -20,8 +20,11 @@ chatenv init -t ecnu -I
 | `ECNU_USERNAME` | Shared portal and network username | No |
 | `ECNU_PASSWORD` | Shared portal and network password | Yes |
 | `ECNU_BASE_URL` | Portal base URL | No |
-| `ECNU_AUTH_CLIENT` | Optional auth_client override path; defaults to the PyPI-bundled binary | No |
-| `ECNU_AUTH_SETTING_FILE` | Optional setting file | No |
+| `ECNU_NETWORK_BASE_URL` | Network portal base URL; default `https://login.ecnu.edu.cn` | No |
+| `ECNU_NETWORK_AC_ID` | Network AC ID; default `1` | No |
+| `ECNU_NETWORK_BACKEND` | `python` (default) or explicit `binary` compatibility | No |
+| `ECNU_AUTH_CLIENT` | Binary-backend executable override | No |
+| `ECNU_AUTH_SETTING_FILE` | Binary backend setting file; ignored by default Python | No |
 | `ECNU_VISITOR_PASSWORD1` | First default visitor password | Yes |
 | `ECNU_VISITOR_PASSWORD2` | Second default visitor password | Yes |
 | `ECNU_VISITOR_REMARK` | Default visitor remark | No |

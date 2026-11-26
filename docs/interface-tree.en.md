@@ -8,6 +8,8 @@ chatecnu
 ├── config.ECNUConfig        # ChatEnv ecnu type
 ├── ecnu.session_tokens      # ChatEnv token-store adapter for ECNU portal sessions
 ├── network_auth             # Campus-network auth_client wrapper
+├── network_interface        # macOS interface-bound DNS/HTTP
+├── network_watch            # Package-owned automatic login user service
 ├── network_install          # Offline helper/config installer
 └── ecnu.portal              # ECNU portal client
 ```
@@ -50,3 +52,5 @@ The keyword-only API accepts `home` (ChatArch home), `user_home` (legacy entrypo
 ## ChatEnv Interface
 
 See [ChatEnv Variables](chatenv.md) for the full schema. Stable sensitive fields are managed by ChatEnv profiles; portal cookie/CSRF session state is managed by ChatEnv's token store, and command output shows only safe metadata.
+
+`chatecnu.network_watch.install_service()` / `service_status()` / `uninstall_service()` implement service options on `ecnu net ensure-login`.

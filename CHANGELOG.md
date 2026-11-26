@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.10 - 2026-11-26
+
+- Add macOS `--interface` to existing network commands with bound DNS/HTTP, verified TLS, and no global resolver or route changes.
+- Extend `net ensure-login` with user-service installation, status, removal, interval/probe options, write-free previews and private Keychain setup. No extra CLI entrypoint.
+- Recovery runs through the package, confirms repeated probe failures and offline authentication, limits retries, locks concurrent checks and skips other routers.
+- Reuse matching ChatEnv credentials or Keychain; preserve credentials on removal and back up/restore jobs during migration.
+- Add recovery, transport, lifecycle and CLI regression coverage, with synchronized bilingual docs.
+
 ## 0.2.9 - 2026-10-15
 
 - 校园网默认改为纯 Python HTTP 后端，直接实现 check/login/logout/ensure-login；不运行 auth_client，不需要密码 argv opt-in。

@@ -407,12 +407,14 @@ def network_auth_install(
 
 
 @network_auth_group.command(name="check")
+@click.option("--interface", default=None, help="绑定网卡（macOS，例如 en1）；DNS 和认证均走该网卡。")
 @click.option("--auth-client", "auth_client_path", default=None, help="auth_client 路径。")
 @click.option("--setting-file", default=None, help="显式设置文件；Python默认使用ChatEnv原生网络配置。")
 @click.option("--json", "json_output", is_flag=True, help="输出 JSON。")
 @click.pass_context
 def network_auth_check(
     ctx: click.Context,
+    interface: str | None,
     auth_client_path: str | None,
     setting_file: str | None,
     json_output: bool,
@@ -420,15 +422,17 @@ def network_auth_check(
     """检查在线状态。"""
 
     prefer_loaded_chatenv = network_auth_prefers_loaded_chatenv(ctx)
-    result = make_network_auth_client(
+    client = make_network_auth_client(
         auth_client_path=auth_client_path,
         setting_file=setting_file,
         prefer_loaded_chatenv=prefer_loaded_chatenv,
-    ).check()
+    )
+    result = select_network_interface(client, interface).check()
     emit_network_auth_result(result, json_output=json_output)
 
 
 @network_auth_group.command(name="login")
+@click.option("--interface", default=None, help="绑定网卡（macOS，例如 en1）。")
 @click.option("--auth-client", "auth_client_path", default=None, help="auth_client 路径。")
 @click.option("--setting-file", default=None, help="显式设置文件；Python默认使用ChatEnv原生网络配置。")
 @click.option("--username", default=None, help="ECNU 用户名。")
@@ -443,6 +447,7 @@ def network_auth_check(
 @click.pass_context
 def network_auth_login(
     ctx: click.Context,
+    interface: str | None,
     auth_client_path: str | None,
     setting_file: str | None,
     username: str | None,
@@ -460,16 +465,18 @@ def network_auth_login(
         interactive=interactive,
         prefer_loaded_chatenv=prefer_loaded_chatenv,
     )
-    result = make_network_auth_client(
+    client = make_network_auth_client(
         auth_client_path=auth_client_path,
         setting_file=setting_file,
         allow_argv_password=allow_argv_password,
         prefer_loaded_chatenv=prefer_loaded_chatenv,
-    ).login(credentials)
+    )
+    result = select_network_interface(client, interface).login(credentials)
     emit_network_auth_result(result, json_output=json_output, secret_values=(credentials.password,))
 
 
 @network_auth_group.command(name="logout")
+@click.option("--interface", default=None, help="绑定网卡（macOS，例如 en1）。")
 @click.option("--auth-client", "auth_client_path", default=None, help="auth_client 路径。")
 @click.option("--setting-file", default=None, help="显式设置文件；Python默认使用ChatEnv原生网络配置。")
 @click.option("--username", default=None, help="ECNU 用户名。")
@@ -478,6 +485,7 @@ def network_auth_login(
 @click.pass_context
 def network_auth_logout(
     ctx: click.Context,
+    interface: str | None,
     auth_client_path: str | None,
     setting_file: str | None,
     username: str | None,
@@ -497,11 +505,21 @@ def network_auth_logout(
         setting_file=setting_file,
         prefer_loaded_chatenv=prefer_loaded_chatenv,
     )
+    client = select_network_interface(client, interface)
     result = client.logout(resolved_username) if resolved_username else client.logout_current()
     emit_network_auth_result(result, json_output=json_output)
 
 
 @network_auth_group.command(name="ensure-login")
+@click.option("--interface", default=None, help="绑定网卡（macOS，例如 en1）。")
+@click.option("--install-service", is_flag=True, help="安装并启动当前用户的定时重登服务（macOS）。")
+@click.option("--uninstall-service", is_flag=True, help="停止并卸载当前用户服务，保留配置与凭据。")
+@click.option("--service-status", is_flag=True, help="查看用户服务和最近一次检测状态。")
+@click.option("--save-password", is_flag=True, help="隐藏输入服务账号密码并保存到 macOS 钥匙串。")
+@click.option("--interval", default=60, type=click.IntRange(15, 86400), show_default=True, help="安装服务时的检测间隔（秒）。")
+@click.option("--probe-url", default="https://www.baidu.com/", show_default=True, help="安装服务时的 HTTPS 联网检测地址。")
+@click.option("--dry-run", is_flag=True, help="预览服务安装或卸载，不写文件或启动任务。")
+@click.option("--service-run", is_flag=True, hidden=True, help="Execute one scheduled service check.")
 @click.option("--auth-client", "auth_client_path", default=None, help="auth_client 路径。")
 @click.option("--setting-file", default=None, help="显式设置文件；Python默认使用ChatEnv原生网络配置。")
 @click.option("--username", default=None, help="ECNU 用户名。")
@@ -516,6 +534,15 @@ def network_auth_logout(
 @click.pass_context
 def network_auth_ensure_login(
     ctx: click.Context,
+    interface: str | None,
+    install_service: bool,
+    uninstall_service: bool,
+    service_status: bool,
+    save_password: bool,
+    interval: int,
+    probe_url: str,
+    dry_run: bool,
+    service_run: bool,
     auth_client_path: str | None,
     setting_file: str | None,
     username: str | None,
@@ -527,18 +554,93 @@ def network_auth_ensure_login(
     """离线时登录。"""
 
     prefer_loaded_chatenv = network_auth_prefers_loaded_chatenv(ctx)
+    modes = [install_service, uninstall_service, service_status, save_password, service_run]
+    if sum(modes) > 1:
+        raise click.UsageError("Choose only one service action.")
+    if not install_service:
+        from click.core import ParameterSource
+
+        if any(ctx.get_parameter_source(name) == ParameterSource.COMMANDLINE
+               for name in ("interval", "probe_url")):
+            raise click.UsageError("--interval and --probe-url require --install-service.")
+    if any(modes):
+        if auth_client_path or setting_file or allow_argv_password or password:
+            raise click.UsageError("Service actions do not accept legacy settings or --password; use ChatEnv or --save-password.")
+        config = ctx.find_root().obj or {}
+        if config.get("env_file"):
+            raise click.UsageError("Service actions do not accept --env-file; use -e/--env.")
+        from chatecnu import network_watch as watch
+
+        try:
+            if install_service:
+                if not interface:
+                    raise click.UsageError("--install-service requires --interface.")
+                client = make_network_auth_client(auth_client_path=None, setting_file=None,
+                                                  prefer_loaded_chatenv=prefer_loaded_chatenv)
+                if not isinstance(client, PythonNetworkAuthClient):
+                    raise click.UsageError("Services require ECNU_NETWORK_BACKEND=python.")
+                result = watch.install_service(
+                    interface=interface, base_url=client.base_url, ac_id=client.acid,
+                    username=username or resolve_ecnu_config_value("ECNU_USERNAME", ECNUConfig.ECNU_USERNAME,
+                                                                  prefer_loaded_chatenv=prefer_loaded_chatenv),
+                    env_profile=config.get("env_profile"), interval=interval,
+                    probe_url=probe_url, dry_run=dry_run,
+                )
+                client.session.close()
+            elif dry_run and not uninstall_service:
+                raise click.UsageError("--dry-run requires --install-service or --uninstall-service.")
+            elif uninstall_service:
+                result = watch.uninstall_service(dry_run=dry_run)
+            elif service_status:
+                result = watch.service_status()
+            elif save_password:
+                watch.require_macos()
+                if not watch.load_json(watch.paths()["config"]):
+                    raise click.UsageError("Install the service before saving its password.")
+                if interactive is False or not click.get_text_stream("stdin").isatty():
+                    raise click.UsageError("--save-password requires a local interactive terminal.")
+                account = watch.load_json(watch.paths()["config"])["username"]
+                click.echo("Service account: " + "*" * max(0, len(account) - 4) + account[-4:])
+                secret = click.prompt("Campus password", hide_input=True, confirmation_prompt=True)
+                try:
+                    result = watch.save_password(secret)
+                finally:
+                    del secret
+            else:
+                def password_loader(service_config):
+                    account = resolve_ecnu_config_value("ECNU_USERNAME", ECNUConfig.ECNU_USERNAME,
+                                                        prefer_loaded_chatenv=prefer_loaded_chatenv)
+                    secret = resolve_ecnu_config_value("ECNU_PASSWORD", ECNUConfig.ECNU_PASSWORD,
+                                                       prefer_loaded_chatenv=prefer_loaded_chatenv)
+                    return secret if account == service_config["username"] and secret else watch.keychain(service_config)
+                result = watch.run_service(password_loader)
+        except (ValueError, OSError, watch.KeychainError, TimeoutError) as exc:
+            if isinstance(exc, click.UsageError):
+                raise
+            if json_output:
+                echo_json({"success": False, "error": str(exc)})
+                raise click.exceptions.Exit(1) from exc
+            raise click.ClickException(str(exc)) from exc
+        if json_output:
+            echo_json(result)
+        else:
+            click.echo(json.dumps(result, ensure_ascii=False, indent=2))
+        return
+    if dry_run:
+        raise click.UsageError("--dry-run requires a service installation or removal.")
     credentials = resolve_network_auth_credentials(
         username=username,
         password=password,
         interactive=interactive,
         prefer_loaded_chatenv=prefer_loaded_chatenv,
     )
-    result = make_network_auth_client(
+    client = make_network_auth_client(
         auth_client_path=auth_client_path,
         setting_file=setting_file,
         allow_argv_password=allow_argv_password,
         prefer_loaded_chatenv=prefer_loaded_chatenv,
-    ).ensure_login(credentials)
+    )
+    result = select_network_interface(client, interface).ensure_login(credentials)
     emit_network_auth_result(result, json_output=json_output, secret_values=(credentials.password,))
 
 
@@ -731,6 +833,17 @@ def visitor_lock(
         json_output=json_output,
         action="Lock visitor",
     )
+
+
+def select_network_interface(client, interface: str | None):
+    if interface is None:
+        return client
+    from chatecnu.network_interface import bind_client
+
+    try:
+        return bind_client(client, interface)
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 def make_network_auth_client(

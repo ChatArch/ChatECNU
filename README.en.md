@@ -59,11 +59,11 @@ ecnu
 │   ├── status [--json]  # 门户会话状态。
 │   └── user [--json]  # 门户用户信息。
 ├── net  # 校园网联网。
-│   ├── check [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--json]  # 检查在线状态。
-│   ├── ensure-login [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--password PASSWORD] [--allow-argv-password] [--json] [--interactive]  # 离线时登录。
+│   ├── check [--interface INTERFACE] [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--json]  # 检查在线状态。
+│   ├── ensure-login [--interface INTERFACE] [--install-service] [--uninstall-service] [--service-status] [--save-password] [--interval INTERVAL] [--probe-url PROBE-URL] [--dry-run] [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--password PASSWORD] [--allow-argv-password] [--json] [--interactive]  # 离线时登录。
 │   ├── install [--host HOST] [--ac-id AC-ID] [--campus-url CAMPUS-URL] [--campus-postfix CAMPUS-POSTFIX] [--force] [--dry-run] [--json]  # 离线准备联网工具与设置，不登录。
-│   ├── login [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--password PASSWORD] [--allow-argv-password] [--json] [--interactive]  # 登录。
-│   └── logout [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--json] [--interactive]  # 退出校园网。
+│   ├── login [--interface INTERFACE] [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--password PASSWORD] [--allow-argv-password] [--json] [--interactive]  # 登录。
+│   └── logout [--interface INTERFACE] [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--json] [--interactive]  # 退出校园网。
 └── visitor  # 访客账号。
     ├── create [--remark REMARK] [--dry-run] [--json] [--interactive]  # 创建访客账号。
     ├── default [--password1 PASSWORD1] [--password2 PASSWORD2] [--remark REMARK] [--json] [--interactive]  # 维护默认访客账号。
@@ -97,3 +97,49 @@ ecnu net ensure-login -I
 `ECNU_NETWORK_BACKEND=python` is the default: SRun HTTP runs directly, without `auth_client` or password-bearing child-process argv. It reuses ChatEnv `ECNU_USERNAME` / `ECNU_PASSWORD` and native `ECNU_NETWORK_BASE_URL` / `ECNU_NETWORK_AC_ID`; Python imports legacy settings only with explicit `--setting-file`; login/logout verify the resulting online state and JSON reports `backend=python`. Only explicit `ECNU_NETWORK_BACKEND=binary` uses the legacy binary, where login still requires `--allow-argv-password`; `--auth-client` / `ECNU_AUTH_CLIENT` apply only to binary. The default Python path does not require `net install`.
 
 Do not print or commit passwords, cookies, SMS codes, or session values.
+
+## Scheduled automatic login on macOS
+
+Automatic recovery extends `ecnu net ensure-login` (`chatecnu net ensure-login`
+is the compatibility entrypoint); no additional CLI is installed.
+
+```bash
+# Preview without writing files or starting a job
+ecnu net ensure-login --interface en1 --install-service --interval 60 --dry-run --json
+# Install and start the current user's LaunchAgent
+ecnu net ensure-login --interface en1 --install-service --interval 60
+# Enter the service account password privately and save it in macOS Keychain
+ecnu net ensure-login --save-password
+# Inspect the service and latest check
+ecnu net ensure-login --service-status --json
+# Stop and remove the job, retaining configuration and credentials
+ecnu net ensure-login --uninstall-service
+```
+
+`--interface` also works with `net check/login/logout`, currently on macOS with
+the Python backend. Use `ecnu net check --interface en1 --json` for Wi-Fi or
+`ecnu net check --interface en0 --json` for Ethernet. DNS, reachability and
+portal sockets stay bound to that interface, with TLS verification enabled;
+there is no fallback to another interface or proxy, or system route/priority change.
+`--probe-url` defaults to `https://www.baidu.com/`; HTTPS reachability replaces ICMP ping.
+
+The service runs at user sign-in and every `--interval` seconds (default 60),
+calling the installed package through `python -m chatecnu net ensure-login`.
+It records the router address and MAC at installation and skips other networks.
+Login requires two consecutive failed probes and an explicit offline portal response.
+Unknown status, an authenticated network outage or unavailable credentials do not
+cause blind logins. Attempts have a five-minute cooldown; a lock prevents concurrent checks.
+
+Credentials come from matching `ECNU_USERNAME` / `ECNU_PASSWORD` in the selected
+ChatEnv profile (`-e campus`), or from the macOS login Keychain. `--save-password`
+requires a local interactive terminal. Passwords are absent from plist/JSON files
+and command arguments. Without credentials, the service monitors but cannot restore
+expired authentication. Background jobs do not inherit one-off shell credentials;
+use a ChatEnv profile or Keychain.
+
+Configuration and state live in `$CHATARCH_HOME/chatecnu/wifi-autologin/` and the
+job in `~/Library/LaunchAgents/com.chatarch.ecnu.wifi-autologin.plist`.
+Reinstallation backs up the old configuration and job, including migration from the
+earlier standalone agent; the installer leaves old script files in place. Failed
+installation restores the previous files. This is a per-user Mac service, inactive
+during shutdown, sleep or user logout, not a router service.

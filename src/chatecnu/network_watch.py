@@ -353,5 +353,3 @@ def save_password(password: str) -> dict:
     write_json(target["config"], config)
     launchctl("kickstart", f"gui/{os.getuid()}/{LABEL}", allow_missing=True)
     return {"success": True, "credentials_configured": True, "credential_storage": "macOS Keychain"}
-
-

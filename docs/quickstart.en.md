@@ -75,46 +75,23 @@ ecnu net ensure-login -I
 
 ## Scheduled automatic login on macOS
 
-Automatic recovery extends `ecnu net ensure-login` (`chatecnu net ensure-login`
-is the compatibility entrypoint); no additional CLI is installed.
+Automatic recovery is part of the existing `ecnu net ensure-login` command (`chatecnu net ensure-login` is the compatibility entrypoint); no extra CLI is installed.
 
 ```bash
 # Preview without writing files or starting a job
-ecnu net ensure-login --interface en1 --install-service --interval 60 --dry-run --json
+ecnu net ensure-login --install-service --interval 60 --dry-run --json
 # Install and start the current user's LaunchAgent
-ecnu net ensure-login --interface en1 --install-service --interval 60
-# Enter the service account password privately and save it in macOS Keychain
-ecnu net ensure-login --save-password
+ecnu net ensure-login --install-service --interval 60
 # Inspect the service and latest check
 ecnu net ensure-login --service-status --json
-# Stop and remove the job, retaining configuration and credentials
+# Stop and remove the job, retaining ChatEnv configuration
 ecnu net ensure-login --uninstall-service
 ```
 
-`--interface` also works with `net check/login/logout`, currently on macOS with
-the Python backend. Use `ecnu net check --interface en1 --json` for Wi-Fi or
-`ecnu net check --interface en0 --json` for Ethernet. DNS, reachability and
-portal sockets stay bound to that interface, with TLS verification enabled;
-there is no fallback to another interface or proxy, or system route/priority change.
-`--probe-url` defaults to `https://www.baidu.com/`; HTTPS reachability replaces ICMP ping.
+The service follows the current macOS system route. Whichever interface macOS selects is used for checks, login, and recovery; the CLI does not store or select an interface. `--probe-url` defaults to `https://www.baidu.com/` and uses HTTPS reachability rather than ICMP ping.
 
-The service runs at user sign-in and every `--interval` seconds (default 60),
-calling the installed package through `python -m chatecnu net ensure-login`.
-It records the router address and MAC at installation and skips other networks.
-Login requires two consecutive failed probes and an explicit offline portal response.
-Unknown status, an authenticated network outage or unavailable credentials do not
-cause blind logins. Attempts have a five-minute cooldown; a lock prevents concurrent checks.
+It runs every `--interval` seconds (default 60) by invoking the installed package through `python -m chatecnu net ensure-login`. Login requires two consecutive failed probes and an explicit offline portal response. Unknown status, an authenticated network outage, and missing ChatEnv credentials do not cause blind logins. Attempts have a five-minute cooldown and a lock prevents concurrent checks.
 
-Credentials come from matching `ECNU_USERNAME` / `ECNU_PASSWORD` in the selected
-ChatEnv profile (`-e campus`), or from the macOS login Keychain. `--save-password`
-requires a local interactive terminal. Passwords are absent from plist/JSON files
-and command arguments. Without credentials, the service monitors but cannot restore
-expired authentication. Background jobs do not inherit one-off shell credentials;
-use a ChatEnv profile or Keychain.
+Credentials always come from the selected ChatEnv ECNU profile's `ECNU_USERNAME` / `ECNU_PASSWORD`, or the active profile when `-e` is omitted. The service stores no account, password,; each background check reloads ChatEnv. Configure the ECNU profile with `chatenv` before installing the service; no account or password is entered into `ensure-login`.
 
-Configuration and state live in `$CHATARCH_HOME/chatecnu/wifi-autologin/` and the
-job in `~/Library/LaunchAgents/com.chatarch.ecnu.wifi-autologin.plist`.
-Reinstallation backs up the old configuration and job, including migration from the
-earlier standalone agent; the installer leaves old script files in place. Failed
-installation restores the previous files. This is a per-user Mac service, inactive
-during shutdown, sleep or user logout, not a router service.
+Configuration and state live in `$CHATARCH_HOME/chatecnu/wifi-autologin/` and the job in `~/Library/LaunchAgents/com.chatarch.ecnu.wifi-autologin.plist`. Reinstallation backs up old configuration and removes stale account snapshots. This is a per-user Mac service, inactive during shutdown, sleep, or user logout.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.11 - 2026-11-27
+
+- Make automatic network recovery ChatEnv-only: reload `ECNU_USERNAME` and `ECNU_PASSWORD` from the selected ECNU profile on every run, with no account snapshot, Keychain fallback, or password prompt.
+- Make service installation and recovery follow the macOS system route; remove the CLI interface selector so the system-selected network is always used.
+- Migrate stale service configuration by dropping stored account and credential fields, and report the active system interface and ChatEnv profile in service status.
+- Add regression coverage and synchronize bilingual documentation with the ChatEnv-only, system-routed service model.
+
+
 ## 0.2.10 - 2026-11-26
 
 - Add macOS `--interface` to existing network commands with bound DNS/HTTP, verified TLS, and no global resolver or route changes.

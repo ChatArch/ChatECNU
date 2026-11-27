@@ -59,11 +59,11 @@ ecnu
 │   ├── status [--json]  # 门户会话状态。
 │   └── user [--json]  # 门户用户信息。
 ├── net  # 校园网联网。
-│   ├── check [--interface INTERFACE] [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--json]  # 检查在线状态。
-│   ├── ensure-login [--interface INTERFACE] [--install-service] [--uninstall-service] [--service-status] [--save-password] [--interval INTERVAL] [--probe-url PROBE-URL] [--dry-run] [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--password PASSWORD] [--allow-argv-password] [--json] [--interactive]  # 离线时登录。
+│   ├── check [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--json]  # 检查在线状态。
+│   ├── ensure-login [--install-service] [--uninstall-service] [--service-status] [--interval INTERVAL] [--probe-url PROBE-URL] [--dry-run] [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--password PASSWORD] [--allow-argv-password] [--json] [--interactive]  # 离线时登录。
 │   ├── install [--host HOST] [--ac-id AC-ID] [--campus-url CAMPUS-URL] [--campus-postfix CAMPUS-POSTFIX] [--force] [--dry-run] [--json]  # 离线准备联网工具与设置，不登录。
-│   ├── login [--interface INTERFACE] [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--password PASSWORD] [--allow-argv-password] [--json] [--interactive]  # 登录。
-│   └── logout [--interface INTERFACE] [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--json] [--interactive]  # 退出校园网。
+│   ├── login [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--password PASSWORD] [--allow-argv-password] [--json] [--interactive]  # 登录。
+│   └── logout [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--json] [--interactive]  # 退出校园网。
 └── visitor  # 访客账号。
     ├── create [--remark REMARK] [--dry-run] [--json] [--interactive]  # 创建访客账号。
     ├── default [--password1 PASSWORD1] [--password2 PASSWORD2] [--remark REMARK] [--json] [--interactive]  # 维护默认访客账号。
@@ -100,37 +100,23 @@ ecnu net ensure-login -I
 
 ## macOS 定时自动重登
 
-自动重登属于现有 `ecnu net ensure-login`（兼容入口 `chatecnu net ensure-login`），无需额外 CLI。
+自动重登属于现有 `ecnu net ensure-login`（兼容入口 `chatecnu net ensure-login`），不新增 CLI。
 
 ```bash
 # 只预览，不写配置或启动任务
-ecnu net ensure-login --interface en1 --install-service --interval 60 --dry-run --json
+ecnu net ensure-login --install-service --interval 60 --dry-run --json
 # 安装并启动当前用户 LaunchAgent
-ecnu net ensure-login --interface en1 --install-service --interval 60
-# 隐藏输入当前服务账号密码，保存到 macOS 钥匙串
-ecnu net ensure-login --save-password
+ecnu net ensure-login --install-service --interval 60
 # 查看服务与最近一次检测结果
 ecnu net ensure-login --service-status --json
-# 停止并卸载任务，保留配置、状态和钥匙串凭据
+# 停止并卸载任务，保留 ChatEnv 配置
 ecnu net ensure-login --uninstall-service
 ```
 
-`--interface` 也支持 `net check/login/logout`，当前仅支持 macOS Python 后端。
-`ecnu net check --interface en1 --json` 查询 Wi-Fi，`ecnu net check --interface en0 --json`
-单独查询网线。DNS、外网检测及认证连接均绑定所选网卡，保持 HTTPS 证书验证；不回退到其他网卡或代理，
-不修改系统路由和网络优先级。`--probe-url` 默认 `https://www.baidu.com/`，采用 HTTPS 检测，不依赖 ICMP ping。
+服务遵循 macOS 当前系统路由。系统选择哪张网卡，检测、登录和自动重登就使用哪张网卡；CLI 不保存或指定网卡。`--probe-url` 默认使用 `https://www.baidu.com/`，通过 HTTPS 检测外网，不依赖 ICMP ping。
 
-服务在用户登录后及每隔 `--interval` 秒（默认 60）运行一次，直接调用安装包
-`python -m chatecnu net ensure-login`。它绑定安装时识别的路由器地址和 MAC；其他网络跳过登录。
-只有连续两次外网检测失败且校园网明确返回未认证才尝试登录；未知认证状态、已经认证但外网故障、
-缺少或锁定的凭据均不会盲目重登。重试间隔至少五分钟；检测加锁以防并发。
+服务每隔 `--interval` 秒（默认 60）运行一次，直接调用安装包 `python -m chatecnu net ensure-login`。只有连续两次外网检测失败且校园网明确返回未认证才尝试登录；未知认证状态、已认证但外网故障、缺少 ChatEnv 凭据均不会盲目重登。重试间隔至少五分钟，检测加锁以防并发。
 
-凭据从 `-e campus` 指定的 ChatEnv profile 的 `ECNU_USERNAME` / `ECNU_PASSWORD` 加载，
-账号必须匹配服务配置；否则读取 macOS 登录钥匙串。`--save-password` 需要本机交互终端，密码不写入
-plist、JSON 或命令参数。未配置密码时可安装检测服务，但无法恢复过期认证。后台任务不会继承一次性的
-进程环境凭据，应使用 ChatEnv profile 或钥匙串。
+凭据始终从选定的 ChatEnv ECNU profile 的 `ECNU_USERNAME` / `ECNU_PASSWORD` 加载；没有 `-e` 时使用 active profile。服务配置不保存账号或密码，每次后台检查都会重新读取 ChatEnv。安装前请先用 `chatenv` 配置 ECNU profile；无需在 `ensure-login` 命令中输入账号密码。
 
-配置与状态在 `$CHATARCH_HOME/chatecnu/wifi-autologin/`，任务文件在
-`~/Library/LaunchAgents/com.chatarch.ecnu.wifi-autologin.plist`。重装会备份旧配置与任务文件，
-支持把原独立脚本任务迁到包内入口；安装器保留旧脚本文件。安装失败会恢复原文件。
-服务运行在这台 Mac 上，关机、休眠或退出用户会话期间不检测；它不在路由器上运行。
+配置与状态在 `$CHATARCH_HOME/chatecnu/wifi-autologin/`，任务文件在 `~/Library/LaunchAgents/com.chatarch.ecnu.wifi-autologin.plist`。重装会备份旧配置与任务文件，旧服务配置中的账号快照会被清除。服务运行在这台 Mac 上，关机、休眠或退出用户会话期间不检测。

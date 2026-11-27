@@ -20,11 +20,11 @@ ecnu
 │   ├── status [--json]  # 门户会话状态。
 │   └── user [--json]  # 门户用户信息。
 ├── net  # 校园网联网。
-│   ├── check [--interface INTERFACE] [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--json]  # 检查在线状态。
-│   ├── ensure-login [--interface INTERFACE] [--install-service] [--uninstall-service] [--service-status] [--save-password] [--interval INTERVAL] [--probe-url PROBE-URL] [--dry-run] [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--password PASSWORD] [--allow-argv-password] [--json] [--interactive]  # 离线时登录。
+│   ├── check [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--json]  # 检查在线状态。
+│   ├── ensure-login [--install-service] [--uninstall-service] [--service-status] [--interval INTERVAL] [--probe-url PROBE-URL] [--dry-run] [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--password PASSWORD] [--allow-argv-password] [--json] [--interactive]  # 离线时登录。
 │   ├── install [--host HOST] [--ac-id AC-ID] [--campus-url CAMPUS-URL] [--campus-postfix CAMPUS-POSTFIX] [--force] [--dry-run] [--json]  # 离线准备联网工具与设置，不登录。
-│   ├── login [--interface INTERFACE] [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--password PASSWORD] [--allow-argv-password] [--json] [--interactive]  # 登录。
-│   └── logout [--interface INTERFACE] [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--json] [--interactive]  # 退出校园网。
+│   ├── login [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--password PASSWORD] [--allow-argv-password] [--json] [--interactive]  # 登录。
+│   └── logout [--auth-client AUTH-CLIENT-PATH] [--setting-file SETTING-FILE] [--username USERNAME] [--json] [--interactive]  # 退出校园网。
 └── visitor  # 访客账号。
     ├── create [--remark REMARK] [--dry-run] [--json] [--interactive]  # 创建访客账号。
     ├── default [--password1 PASSWORD1] [--password2 PASSWORD2] [--remark REMARK] [--json] [--interactive]  # 维护默认访客账号。

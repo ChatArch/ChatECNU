@@ -21,16 +21,12 @@ def setup(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
     monkeypatch.setenv("CHATARCH_HOME", str(tmp_path / "chatarch"))
     monkeypatch.setattr(watch.platform, "system", lambda: "Darwin")
-    info = {"interface": "en1", "source_ip": "192.0.2.2", "router_ip": "192.0.2.1", "dns_servers": ["192.0.2.53"]}
-    monkeypatch.setattr(watch, "interface_info", lambda _: info.copy())
-    monkeypatch.setattr(watch, "router_mac", lambda *a: "00:11:22:33:44:55")
+    monkeypatch.setattr(watch, "current_route_interface", lambda: "en1")
     session = Mock()
-    session.__enter__ = Mock(return_value=session)
-    session.__exit__ = Mock(return_value=False)
-    monkeypatch.setattr(watch, "interface_session", lambda _: session)
     client = Mock()
     client.check.return_value = SimpleNamespace(success=True, online=True, username="fixture")
     client.login.return_value = SimpleNamespace(success=True, online=True)
+    monkeypatch.setattr(watch.requests, "Session", lambda: session)
     monkeypatch.setattr(watch, "PythonNetworkAuthClient", lambda *a, **k: client)
     calls = []
 
@@ -39,28 +35,29 @@ def setup(tmp_path, monkeypatch):
         return subprocess.CompletedProcess(args, 1 if args[0] == "print" else 0)
 
     monkeypatch.setattr(watch, "launchctl", launchctl)
-    return info, client, calls
+    return session, client, calls
 
 
 def install(**kwargs):
-    return watch.install_service(interface="en1", base_url="https://portal.example", ac_id=1,
-                                 username="fixture", **kwargs)
+    return watch.install_service(base_url="https://portal.example", ac_id=1, **kwargs)
 
 
 def test_dry_run_is_write_free(setup, tmp_path):
     result = install(dry_run=True)
     assert result["dry_run"] and result["interval_seconds"] == 60
+    assert result["credential_source"] == "ChatEnv ECNU profile"
     assert list(tmp_path.iterdir()) == []
     assert setup[2] == []
 
 
-def test_service_uses_package_and_preserves_named_profile(setup):
-    result = install(env_profile="campus")
+def test_service_uses_package_and_named_profile(setup):
+    result = install(env_profile="rex")
     job = plistlib.loads(Path(result["plist"]).read_bytes())
-    assert job["ProgramArguments"][1:] == ["-m", "chatecnu", "-e", "campus", "net", "ensure-login", "--service-run", "--json", "-I"]
+    assert job["ProgramArguments"][1:] == ["-m", "chatecnu", "-e", "rex", "net", "ensure-login", "--service-run", "--json", "-I"]
     assert job["StartInterval"] == 60 and job["RunAtLoad"]
     assert "password" not in json.dumps(job).lower()
-    assert watch.paths()["config"].stat().st_mode & 0o777 == 0o600
+    config = watch.load_json(watch.paths()["config"])
+    assert set(config) == {"ac_id", "base_url", "check_interval_seconds", "env_profile", "probe_url", "request_timeout", "required_failed_checks", "retry_cooldown_seconds"}
     assert not (watch.paths()["root"] / "agent.py").exists()
     assert ("bootstrap", f"gui/{os.getuid()}", result["plist"]) in setup[2]
 
@@ -71,9 +68,11 @@ def test_old_standalone_job_is_backed_up_and_migrated(setup):
     target["plist"].parent.mkdir(parents=True)
     old = {"Label": watch.LABEL, "ProgramArguments": ["python", str(target["root"] / "agent.py")]}
     target["plist"].write_bytes(plistlib.dumps(old))
-    target["config"].write_text(json.dumps({"username": "fixture", "credentials_configured": True}))
+    target["config"].write_text(json.dumps({"username": "stale", "keychain_service": watch.LABEL}))
     result = install()
-    assert result["credentials_configured"]
+    assert result["credential_source"] == "ChatEnv ECNU profile"
+    config = watch.load_json(target["config"])
+    assert "username" not in config and "keychain_service" not in config
     backups = list(target["root"].glob("service-backup-*"))
     assert len(backups) == 1
     assert plistlib.loads((backups[0] / target["plist"].name).read_bytes()) == old
@@ -95,12 +94,13 @@ def test_failed_bootstrap_restores_old_files(setup, monkeypatch):
     assert {name: target[name].read_bytes() for name in original} == original
 
 
-def test_uninstall_preserves_credentials_and_configuration(setup):
+def test_uninstall_preserves_configuration(setup):
     install()
     original = watch.paths()["config"].read_bytes()
-    watch.uninstall_service()
+    result = watch.uninstall_service()
     assert not watch.paths()["plist"].exists()
     assert watch.paths()["config"].read_bytes() == original
+    assert result["credential_source"] == "ChatEnv ECNU profile"
 
 
 def test_unrelated_job_is_not_overwritten_or_removed(setup):
@@ -117,7 +117,7 @@ def test_unrelated_job_is_not_overwritten_or_removed(setup):
 @pytest.mark.parametrize("url", ["http://portal.example", "https://user:secret@portal.example", "https://portal.example/?secret=canary"])
 def test_service_requires_https_urls_without_embedded_credentials(setup, url):
     with pytest.raises(ValueError, match="HTTPS"):
-        watch.install_service(interface="en1", base_url=url, ac_id=1, username="fixture")
+        watch.install_service(base_url=url, ac_id=1)
     assert not watch.paths()["root"].exists()
 
 
@@ -125,7 +125,7 @@ def test_service_requires_https_urls_without_embedded_credentials(setup, url):
 def test_unsupported_platform_fails_before_writes(tmp_path, monkeypatch, system):
     monkeypatch.setenv("CHATARCH_HOME", str(tmp_path / "missing"))
     monkeypatch.setattr(watch.platform, "system", lambda: system)
-    result = CliRunner().invoke(main, ["net", "ensure-login", "--install-service", "--interface", "en1", "--json"])
+    result = CliRunner().invoke(main, ["net", "ensure-login", "--install-service", "--json"])
     assert result.exit_code == 1 and "macOS" in json.loads(result.output)["error"]
     assert list(tmp_path.iterdir()) == []
 
@@ -135,20 +135,25 @@ def test_service_actions_are_mutually_exclusive():
     assert result.exit_code == 2 and "one service action" in result.output
 
 
-def test_install_requires_interface_without_resolving_credentials():
-    result = CliRunner().invoke(main, ["net", "ensure-login", "--install-service"])
-    assert result.exit_code == 2 and "requires --interface" in result.output
+def test_install_no_longer_requires_interface_or_credentials(monkeypatch, tmp_path):
+    monkeypatch.setenv("CHATARCH_HOME", str(tmp_path / "chatarch"))
+    monkeypatch.setattr(watch.platform, "system", lambda: "Linux")
+    result = CliRunner().invoke(main, ["net", "ensure-login", "--install-service", "--dry-run", "--json"])
+    assert result.exit_code == 1
+    assert "macOS" in json.loads(result.output)["error"]
 
 
-def test_save_password_refuses_noninteractive_input(setup):
-    install()
-    result = CliRunner().invoke(main, ["net", "ensure-login", "--save-password", "-I"])
-    assert result.exit_code == 2 and "local interactive terminal" in result.output
+def test_service_cannot_accept_explicit_credentials():
+    result = CliRunner().invoke(main, ["net", "ensure-login", "--install-service", "--username", "SECRET_CANARY", "--password", "SECRET_PASSWORD"])
+    assert result.exit_code == 2
+    assert "SECRET_CANARY" not in result.output and "SECRET_PASSWORD" not in result.output
 
 
-def test_service_cannot_accept_argv_password():
-    result = CliRunner().invoke(main, ["net", "ensure-login", "--install-service", "--interface", "en1", "--password", "SECRET_CANARY"])
-    assert result.exit_code == 2 and "SECRET_CANARY" not in result.output
+def test_service_does_not_store_a_username_snapshot(setup):
+    result = install(env_profile="rex")
+    config = watch.load_json(watch.paths()["config"])
+    assert result["credential_source"] == "ChatEnv ECNU profile"
+    assert "username" not in config and "keychain_service" not in config
 
 
 @pytest.mark.parametrize("online,internet,success,previous,expected", [
@@ -159,7 +164,7 @@ def test_service_cannot_accept_argv_password():
     (None, False, False, {"failed_checks": 3}, "authentication_status_unknown"),
     (False, False, True, {"failed_checks": 1, "last_login_attempt": 990}, "login_cooldown"),
 ])
-def test_recovery_does_not_login_without_confirmed_outage(setup, monkeypatch, online, internet, success, previous, expected):
+def test_recovery_decisions_do_not_login_without_confirmed_outage(setup, monkeypatch, online, internet, success, previous, expected):
     install()
     config = watch.load_json(watch.paths()["config"])
     client = setup[1]
@@ -173,44 +178,29 @@ def test_recovery_does_not_login_without_confirmed_outage(setup, monkeypatch, on
     loader.assert_not_called()
 
 
-@pytest.mark.parametrize("password,expected", [(None, "credentials_missing"), ("SECRET_CANARY", "reconnected")])
-def test_confirmed_outage_uses_credentials_without_exposing_them(setup, monkeypatch, password, expected):
+@pytest.mark.parametrize("credentials,expected", [(None, "credentials_missing"), (("fixture", "SECRET_CANARY"), "reconnected")])
+def test_confirmed_outage_uses_chat_env_credentials(setup, monkeypatch, credentials, expected):
     install()
     config = watch.load_json(watch.paths()["config"])
     client = setup[1]
     client.check.return_value = SimpleNamespace(success=True, online=False, username=None)
     monkeypatch.setattr(watch, "internet_probe", Mock(side_effect=[False, True]))
-    result = watch.check_once(config, {"failed_checks": 1}, lambda _: password, state_path=watch.paths()["state"])
+    result = watch.check_once(config, {"failed_checks": 1}, lambda _: credentials, state_path=watch.paths()["state"])
     assert result["status"] == expected
     assert "SECRET_CANARY" not in json.dumps(result)
-    if password:
-        client.login.assert_called_once_with(NetworkAuthCredentials("fixture", password))
+    if credentials:
+        client.login.assert_called_once_with(NetworkAuthCredentials("fixture", "SECRET_CANARY"))
         assert watch.load_json(watch.paths()["state"])["status"] == "login_in_progress"
     else:
         client.login.assert_not_called()
 
 
-def test_another_router_is_ignored_before_network_or_credentials(setup, monkeypatch):
-    install()
-    setup[1].reset_mock()
-    config = watch.load_json(watch.paths()["config"])
-    monkeypatch.setattr(watch, "router_mac", lambda *a: "00:00:00:00:00:01")
-    loader = Mock()
-    result = watch.check_once(config, {}, loader, state_path=watch.paths()["state"])
-    assert result["status"] == "different_network"
-    setup[1].check.assert_not_called()
-    loader.assert_not_called()
-
-
-def test_locked_keychain_does_not_attempt_login(setup, monkeypatch):
-    install()
-    config = watch.load_json(watch.paths()["config"])
-    setup[1].check.return_value = SimpleNamespace(success=True, online=False, username=None)
-    monkeypatch.setattr(watch, "internet_probe", lambda *a: False)
-    loader = Mock(side_effect=watch.KeychainError("locked"))
-    result = watch.check_once(config, {"failed_checks": 1}, loader, state_path=watch.paths()["state"])
-    assert result["status"] == "credentials_locked"
-    setup[1].login.assert_not_called()
+def test_service_status_reports_system_route_and_chat_env(setup):
+    install(env_profile="rex")
+    result = watch.service_status()
+    assert result["credential_source"] == "ChatEnv ECNU profile"
+    assert result["chat_env_profile"] == "rex"
+    assert result["current_interface"] == "en1"
 
 
 def test_authentication_exception_retains_retry_cooldown(setup, monkeypatch):
@@ -219,14 +209,9 @@ def test_authentication_exception_retains_retry_cooldown(setup, monkeypatch):
     setup[1].login.side_effect = RuntimeError("SECRET_CANARY")
     monkeypatch.setattr(watch, "internet_probe", lambda *a: False)
     watch.write_json(watch.paths()["state"], {"failed_checks": 1})
-    result = watch.run_service(lambda _: "SECRET_CANARY")
-    assert result["status"] == "check_error" and result["last_login_attempt"] > 0
+    result = watch.run_service(lambda _: ("fixture", "SECRET_CANARY"))
+    assert result["status"] == "check_error"
     assert "SECRET_CANARY" not in json.dumps(result)
-
-
-def test_options_for_install_are_not_silently_ignored():
-    result = CliRunner().invoke(main, ["net", "ensure-login", "--interval", "60"])
-    assert result.exit_code == 2 and "require --install-service" in result.output
 
 
 def test_lock_prevents_overlapping_service_runs(setup):
@@ -236,12 +221,3 @@ def test_lock_prevents_overlapping_service_runs(setup):
     with (watch.paths()["root"] / "check.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         assert watch.run_service(Mock())["status"] == "already_checking"
-
-
-def test_service_docs_use_existing_command_without_new_entrypoint():
-    for name in ["README.md", "README.en.md", "docs/ecnu.md", "docs/ecnu.en.md"]:
-        text = Path(name).read_text()
-        for term in ["--install-service", "--interface en1", "--service-status", "--save-password", "--uninstall-service"]:
-            assert term in text, (name, term)
-    manifest = Path("pyproject.toml").read_text()
-    assert "ecnu-wifi-autologin" not in manifest

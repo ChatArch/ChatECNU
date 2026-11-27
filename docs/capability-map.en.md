@@ -10,7 +10,7 @@
 | Offline network setup | Implemented | `ecnu net install` | Native Linux x86_64; no login/download; dry-run and backed-up force |
 | Network check | Implemented | `ecnu net check` | Does not need a password |
 | Campus network access | Implemented | `ecnu net login/logout/ensure-login` | Native Python HTTP by default; explicit binary compatibility only |
-| Interface recovery | Implemented (macOS) | `ecnu net ensure-login --install-service --interface en1` | ChatEnv/Keychain, user LaunchAgent, `--service-status` |
+| Interface recovery | Implemented (macOS) | `ecnu net ensure-login --install-service` | ChatEnv credentials, user LaunchAgent, `--service-status` |
 | ChatEnv config | Implemented | `ecnu` type | Passwords live in stable env; portal sessions/cookies live in the runtime token store |
 
 ## Boundaries

@@ -10,7 +10,7 @@
 | 离线联网准备 | 已实现 | `ecnu net install` | Native Linux x86_64；不登录/下载；dry-run 与 force 备份 |
 | 校园网在线检查 | 已实现 | `ecnu net check` | 不需要密码 |
 | 校园网联网 | 已实现 | `ecnu net login/logout/ensure-login` | 默认纯 Python HTTP；binary 兼容后端必须显式选择 |
-| 网卡与定时重登 | 已实现（macOS） | `ecnu net ensure-login --install-service --interface en1` | ChatEnv/钥匙串凭据，用户 LaunchAgent；`--service-status` 查询 |
+| 网卡与定时重登 | 已实现（macOS） | `ecnu net ensure-login --install-service` | ChatEnv 凭据，用户 LaunchAgent；`--service-status` 查询 |
 | ChatEnv 配置 | 已实现 | `ecnu` 类型 | 密码在 stable env，门户会话/Cookie 在 runtime token-store |
 
 ## 边界
